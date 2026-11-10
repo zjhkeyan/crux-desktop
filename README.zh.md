@@ -1,14 +1,12 @@
 <div align="center">
 
-[![Open Science Desktop — 本地优先 AI 科研桌面工作台](./docs/assets/banner.webp)](https://github.com/ai4s-research/open-science)
+[![Crux Desktop — 本地优先 AI 科研与多智能体算法演化工作台](./docs/assets/banner.webp)](https://github.com/zjhkeyan/crux-desktop)
 
-# Open Science Desktop
+# Crux Desktop
 
-**本地优先、模型无关的 macOS、Windows & Linux AI 科研桌面工作台。**
+**本地优先、模型无关的 macOS、Windows & Linux AI 科研与多智能体演化工作台。**
 
-原名 Open Science。它是 Claude Science 及同类 AI-for-science 工作台的开源桌面替代：
-基于 Tauri、MCP、agent skills 和可复现工件构建。它把智能体、笔记本、文件、图表、
-报告、运行记录和审查连接成一条可审计的桌面工作流。
+基于 Tauri 2、React、Rust (`crux`) 与 OpenCode 构建，内置 **Crux Evolve** 多岛屿算法演化引擎（`crux_evolve`）与 **Crux Discovery** 多智能体科研探索看板（`crux_discovery` + Git Worktree 隔离沙箱）。它将自主智能体、多路线并行演化、文献综述、代码实验、实时谱系看板与报告审查连接成一条可审计的桌面与无头（Headless）工作流。
 
 <p>
   <a href="./README.md">English</a> ·
@@ -21,16 +19,13 @@
 </p>
 
 <p>
+  <a href="https://github.com/zjhkeyan/crux-desktop/releases/latest"><img src="https://img.shields.io/github/v/release/zjhkeyan/crux-desktop?label=Release&color=24C8DB" alt="Latest Release"></a>
+  <a href="https://github.com/zjhkeyan/crux-desktop/releases/download/v0.7.1/Crux_0.7.1_x64-setup.exe"><img src="https://img.shields.io/badge/Windows_x64-Crux__0.7.1__setup.exe-0078D4?logo=windows" alt="Download Windows .exe"></a>
+  <a href="https://github.com/zjhkeyan/crux-desktop/releases/download/v0.7.1/osd-0.7.1-x86_64-pc-windows-msvc.zip"><img src="https://img.shields.io/badge/Portable_CLI-crux.exe_.zip-5B8DEF?logo=windows-terminal" alt="Download Portable ZIP"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
-  <a href="https://doi.org/10.5281/zenodo.21351225"><img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21351225-1682D4" alt="DOI"></a>
-  <a href="https://internscience.github.io/ResearchClawBench-Home/"><img src="https://img.shields.io/badge/%F0%9F%8F%86%20%231-ResearchClawBench-FFB300" alt="#1 on ResearchClawBench"></a>
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-blue" alt="Platforms">
-  <img src="https://img.shields.io/badge/i18n-7%20languages-5B8DEF" alt="7 interface languages">
   <img src="https://img.shields.io/badge/built%20with-Tauri%202%20%2B%20React-24C8DB" alt="Built with Tauri + React">
-  <img src="https://img.shields.io/badge/runtime-OpenCode-success" alt="OpenCode runtime">
-  <a href="https://discord.gg/fWNMDKcd5P"><img src="https://img.shields.io/badge/Join-Discord-5865F2" alt="Join Discord"></a>
-  <a href="http://makeapullrequest.com"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
-  <a href="https://linux.do"><img src="https://img.shields.io/badge/Join-linux.do-orange" alt="linux.do"></a>
+  <img src="https://img.shields.io/badge/engine-Crux%20Evolve%20%2B%20Crux%20Discovery-success" alt="Crux Engine">
 </p>
 
 </div>
@@ -38,6 +33,8 @@
 ---
 
 ## 最新动态
+
+- **2026-11-10** — 🧬 **Crux Discovery + Crux Evolve 多智能体演化引擎与实时谱系看板。** 全面集成 **Crux Evolve** 多岛屿算法进化引擎（`crux_evolve`）、**Crux Discovery** 多智能体协同看板（`crux_discovery`）以及自动分屏弹出（`crux screen new` + `crux screen show`），在「方向看板」首页直接实时展示 **Git Worktree 沙箱分支状态** 与 **Evolution Lineage 演化谱系树与收敛曲线**。已在 [GitHub Releases (`v0.7.1`)](https://github.com/zjhkeyan/crux-desktop/releases/tag/v0.7.1) 发布 Windows x64 `.exe` / `.msi` / 便携版 `.zip` 安装包。*(v0.7.1)*
 
 - **2026-10-29** — 🖥️ **终端常驻，多个智能体并肩工作。** 终端现在运行在 App 之外，更新、重启、崩溃后都还在；Claude Code、Codex 和 pi 可以作为会话与 OpenCode 并列运行，一个会话一键在终端和对话之间切换。另有：每个智能体可用多个账号，主题配色变体，慢速网络也能拿到新模型，中文标点一次输入到位。*(v0.7.1)*
 - **2026-10-26** — 🌐 **在任何浏览器里用完整工作台，智能体之间能互相对话。** 远程访问现在支持分屏、Screen 和终端，手机上也能用，并可用账号密码登录；可以自定义专家智能体，各自配置指令、技能、连接器和模型；智能体还能通过 `osd` 读取并发消息给其他会话和终端。另有：智能体工作时可排队发消息，Linux 免 root 安装。*(v0.7.0)*
@@ -187,11 +184,12 @@
 
 ## 安装
 
-从 [Releases 页面](https://github.com/ai4s-research/open-science/releases/latest) 下载最新安装包。
+从 [Releases 页面](https://github.com/zjhkeyan/crux-desktop/releases/latest) 下载最新安装包：
 
-- **macOS**：`.dmg` / `.app`，Apple Silicon 和 Intel，要求 macOS 13 Ventura 或更高。
-- **Windows**：NSIS `.exe`，Windows 10/11 x64 —— 按用户安装，无需管理员权限。另发 `.msi` 供机构批量部署；两种格式请择一使用，不要混装。
-- **Linux**：x86_64 Linux 的 `.deb` 和 `.rpm`。
+- **Windows 桌面一键安装包（`.exe`，推荐首选）**：[`Crux_0.7.1_x64-setup.exe`](https://github.com/zjhkeyan/crux-desktop/releases/download/v0.7.1/Crux_0.7.1_x64-setup.exe) —— Windows 10/11 x64 按用户安装，无需管理员权限。
+- **Windows 独立免安装便携版（`.zip`）**：[`osd-0.7.1-x86_64-pc-windows-msvc.zip`](https://github.com/zjhkeyan/crux-desktop/releases/download/v0.7.1/osd-0.7.1-x86_64-pc-windows-msvc.zip) —— 解压即用，内含 `crux.exe`、全部 sidecar 与 `skills-crux` 算法引擎。
+- **Windows MSI 安装包（`.msi`）**：[`Crux_0.7.1_x64_en-US.msi`](https://github.com/zjhkeyan/crux-desktop/releases/download/v0.7.1/Crux_0.7.1_x64_en-US.msi) —— 供机构批量部署；两种格式请择一使用，不要混装。
+- **macOS / Linux**：macOS 13+ 的 `.dmg` / `.app`；x86_64 Linux 的 `.deb` 和 `.rpm`。
 
 macOS 安装包已使用 Developer ID 签名、公证并 staple，可直接打开，无需 `xattr` 之类的绕过操作。Windows 与 Linux 构建尚未签名。
 

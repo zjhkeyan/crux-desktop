@@ -1,15 +1,12 @@
 <div align="center">
 
-[![Open Science Desktop — Local-first AI research workbench](./docs/assets/banner.webp)](https://github.com/ai4s-research/open-science)
+[![Crux Desktop — Local-first AI research & evolutionary workbench](./docs/assets/banner.webp)](https://github.com/zjhkeyan/crux-desktop)
 
-# Open Science Desktop
+# Crux Desktop
 
-**Local-first, model-agnostic AI research workbench for macOS, Windows & Linux.**
+**Local-first, model-agnostic AI research & multi-agent evolutionary workbench for macOS, Windows & Linux.**
 
-Formerly Open Science. An open-source desktop alternative to Claude Science and
-similar AI-for-science workbenches — built with Tauri, MCP, agent skills, and
-reproducible artifacts. It connects agents, notebooks, files, figures, reports,
-runs, and review into one auditable desktop workflow.
+Built with Tauri 2, React, Rust (`crux`), OpenCode, and bundled research engines (**Crux Evolve** multi-island algorithmic evolution + **Crux Discovery** multi-agent direction board & Git worktree sandboxes). It connects autonomous agents, evolutionary search, isolated worktrees, notebooks, figures, reports, and review into one auditable desktop & headless workflow.
 
 <p>
   <b>English</b> ·
@@ -22,16 +19,13 @@ runs, and review into one auditable desktop workflow.
 </p>
 
 <p>
+  <a href="https://github.com/zjhkeyan/crux-desktop/releases/latest"><img src="https://img.shields.io/github/v/release/zjhkeyan/crux-desktop?label=Release&color=24C8DB" alt="Latest Release"></a>
+  <a href="https://github.com/zjhkeyan/crux-desktop/releases/download/v0.7.1/Crux_0.7.1_x64-setup.exe"><img src="https://img.shields.io/badge/Windows_x64-Crux__0.7.1__setup.exe-0078D4?logo=windows" alt="Download Windows .exe"></a>
+  <a href="https://github.com/zjhkeyan/crux-desktop/releases/download/v0.7.1/osd-0.7.1-x86_64-pc-windows-msvc.zip"><img src="https://img.shields.io/badge/Portable_CLI-crux.exe_.zip-5B8DEF?logo=windows-terminal" alt="Download Portable ZIP"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
-  <a href="https://doi.org/10.5281/zenodo.21351225"><img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21351225-1682D4" alt="DOI"></a>
-  <a href="https://internscience.github.io/ResearchClawBench-Home/"><img src="https://img.shields.io/badge/%F0%9F%8F%86%20%231-ResearchClawBench-FFB300" alt="#1 on ResearchClawBench"></a>
   <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-blue" alt="Platforms">
-  <img src="https://img.shields.io/badge/i18n-7%20languages-5B8DEF" alt="7 interface languages">
   <img src="https://img.shields.io/badge/built%20with-Tauri%202%20%2B%20React-24C8DB" alt="Built with Tauri + React">
-  <img src="https://img.shields.io/badge/runtime-OpenCode-success" alt="OpenCode runtime">
-  <a href="https://discord.gg/fWNMDKcd5P"><img src="https://img.shields.io/badge/Join-Discord-5865F2" alt="Join Discord"></a>
-  <a href="http://makeapullrequest.com"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome"></a>
-  <a href="https://linux.do"><img src="https://img.shields.io/badge/Join-linux.do-orange" alt="linux.do"></a>
+  <img src="https://img.shields.io/badge/engine-Crux%20Evolve%20%2B%20Crux%20Discovery-success" alt="Crux Engine">
 </p>
 
 </div>
@@ -39,6 +33,8 @@ runs, and review into one auditable desktop workflow.
 ---
 
 ## News
+
+- **2026-11-10** — 🧬 **Crux Discovery + Crux Evolve + Live Worktree & Lineage Board.** Integrated the **Crux Evolve** multi-island algorithmic evolution engine (`crux_evolve`), the **Crux Discovery** multi-agent research coordination board (`crux_discovery`), and automatic screen popup (`crux screen new` + `crux screen show`) with real-time **Git Worktree Sandboxes** and **Evolution Lineage Graph** visualization on the Direction Board. Published official Windows x64 `.exe` / `.msi` / portable `.zip` packages on [GitHub Releases (`v0.7.1`)](https://github.com/zjhkeyan/crux-desktop/releases/tag/v0.7.1). *(v0.7.1)*
 
 - **2026-10-29** — 🖥️ **Terminals that stay, agents side by side.** Terminals now run outside the app and survive updates, relaunches and crashes; Claude Code, Codex and pi run as conversations beside OpenCode, and a session moves between terminal and conversation in one click. Plus several accounts per agent, theme variants, new models on slow networks, and Chinese punctuation that goes in on the first press. *(v0.7.1)*
 - **2026-10-26** — 🌐 **The workbench from any browser, and agents that talk to each other.** Splits, Screens and terminals now work over Remote Access, on a phone too, with name-and-password accounts; define your own Specialists with their own instructions, skills, connectors and model; and agents read and message each other's conversations and terminals through `osd`. Plus queued messages while the agent works, and a no-root Linux install. *(v0.7.0)*
@@ -225,11 +221,12 @@ For a neutral positioning note, see
 ## Install
 
 Download the latest installer from the
-[Releases page](https://github.com/ai4s-research/open-science/releases/latest).
+[Releases page](https://github.com/zjhkeyan/crux-desktop/releases/latest):
 
-- **macOS**: `.dmg` / `.app`, Apple Silicon and Intel, macOS 13 Ventura or later.
-- **Windows**: NSIS `.exe`, Windows 10/11 x64 — installs per user, no admin needed. A `.msi` is also published for IT-managed deployment; pick one format and stay on it.
-- **Linux**: `.deb` and `.rpm` on x86_64 Linux.
+- **Windows Desktop Installer (`.exe`, Recommended)**: [`Crux_0.7.1_x64-setup.exe`](https://github.com/zjhkeyan/crux-desktop/releases/download/v0.7.1/Crux_0.7.1_x64-setup.exe) — NSIS per-user installer for Windows 10/11 x64, no admin required.
+- **Windows Portable CLI & Headless Server (`.zip`)**: [`osd-0.7.1-x86_64-pc-windows-msvc.zip`](https://github.com/zjhkeyan/crux-desktop/releases/download/v0.7.1/osd-0.7.1-x86_64-pc-windows-msvc.zip) — self-contained archive with `crux.exe`, sidecars, and bundled skills.
+- **Windows MSI Installer (`.msi`)**: [`Crux_0.7.1_x64_en-US.msi`](https://github.com/zjhkeyan/crux-desktop/releases/download/v0.7.1/Crux_0.7.1_x64_en-US.msi) — for IT-managed deployment.
+- **macOS / Linux**: `.dmg` / `.app` on macOS 13+; `.deb` and `.rpm` on x86_64 Linux.
 
 The macOS packages are Developer ID signed, notarized, and stapled, so they open
 normally — no `xattr` workaround needed. Windows and Linux builds are not signed yet.
