@@ -613,16 +613,25 @@ const surveySession: Session = {
   },
 };
 
+const allMockSessions: Session[] = [
+  figureSession,
+  browserSession,
+  reproSession,
+  surveySession,
+  sweepSession,
+  litSession,
+];
+
 export const mockProject: Project = {
   id: "cross-species",
   name: "Cross-species scRNA-seq",
-  sessions: [figureSession, browserSession, reproSession, surveySession, sweepSession, litSession],
+  sessions: [],
 };
 
 export const mockProjects: Project[] = [mockProject];
 
 export function findSession(sessionId: string): Session | undefined {
-  return mockProject.sessions.find((s) => s.id === sessionId);
+  return allMockSessions.find((s) => s.id === sessionId);
 }
 
 export const defaultSessionId = litSession.id;

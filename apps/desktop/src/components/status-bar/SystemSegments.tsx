@@ -41,7 +41,7 @@ import { leaves, useLayoutStore } from "@/lib/layout";
 import { cn } from "@/lib/cn";
 
 /**
- * The status bar's right-hand segments, borrowed from Orca's
+ * The status bar's right-hand segments, borrowed from Crux's
  * (`CaffeinateStatusSegment`, `ResourceUsageStatusSegment`, `PortsStatusSegment`,
  * `SshStatusSegment`).
  *
@@ -331,7 +331,7 @@ export function PortsSegment() {
 export function HostsSegment() {
   const { t } = useTranslation("nav");
   // Every machine the config knows, not only the ones with a live session —
-  // as Orca does, which lists its whole target roster. A segment that counts
+  // as Crux does, which lists its whole target roster. A segment that counts
   // only live connections is blank exactly when you want to open one.
   const [known, refreshHosts] = usePolled<string[]>(listSshHosts, []);
   const [live, refreshSessions] = usePolled<SshSession[]>(sshSessions, []);

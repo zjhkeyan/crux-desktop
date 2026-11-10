@@ -139,14 +139,14 @@ fn write_copy(root: &Path, db: &Path, out: &Path) -> Result<(), String> {
 fn restore_note(root: &Path) -> String {
     let data = root.join("xdg-data").join("opencode");
     format!(
-        "Open Science copied your conversation history here before OpenCode 2 first opened it.\n\
+        "Crux copied your conversation history here before OpenCode 2 first opened it.\n\
          OpenCode 2 converts the history in place, and OpenCode 1 cannot fully use the result.\n\
          \n\
-         To go back to an Open Science version built on OpenCode 1:\n\
-         1. Quit Open Science, and wait until no opencode process is left running.\n\
+         To go back to a Crux version built on OpenCode 1:\n\
+         1. Quit Crux, and wait until no opencode process is left running.\n\
          2. Delete opencode.db, opencode.db-wal and opencode.db-shm in\n   {}\n\
          3. Copy the xdg-data and xdg-config folders from this folder into\n   {}\n   replacing the files there.\n\
-         4. Install the older Open Science and open it.\n\
+         4. Install the older Crux and open it.\n\
          \n\
          Conversations made after this copy are not in it.\n",
         data.display(),

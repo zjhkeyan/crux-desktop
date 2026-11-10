@@ -3,7 +3,7 @@
 // The accessibility tree is the answer; the rest is one header telling the model
 // which window it is looking at, whether the action it just ran can be proven to
 // have landed, and where the screenshot went when it asked for one. The
-// verification vocabulary is Orca's, kept word-for-word because the skill guide's
+// verification vocabulary is Crux's, kept word-for-word because the skill guide's
 // rules are written against it.
 import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'

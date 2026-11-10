@@ -69,7 +69,7 @@
   },
   "skills": {
     "title": "Skills & Agents",
-    "subtitle": "Everything the agent can use, loaded live from OpenCode.",
+    "subtitle": "Everything the agent can use, loaded live from the runtime.",
     "install": {
       "sectionTitle": "Install a skill",
       "placeholder": "Paste a SKILL.md, or a URL / description for the agent to turn into one",
@@ -88,7 +88,7 @@
       "found": "found",
       "notFound": "not found",
       "appManaged": "app-managed",
-      "note": "OpenCode runs code with whatever is installed here (e.g. Python via its shell tool). uv ships with the app, and Jupyter can be app-managed in Settings → Connectors. Python and R are not bundled — install them or a Science Pack to enable analysis."
+      "note": "The agent runtime runs code with whatever is installed here (for example calling Python via its shell tool). uv ships with the app, and Jupyter can be app-managed under Settings → Connectors. Python and R are not bundled — install them yourself or install the Science Pack to enable analysis."
     },
     "agentsSection": {
       "heading": "Agents",

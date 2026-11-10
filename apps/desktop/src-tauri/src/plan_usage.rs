@@ -1,5 +1,5 @@
 // How much of the subscription is left, asked of the provider rather than
-// guessed from transcripts. Ported from Orca (`src/main/rate-limits`, MIT):
+// guessed from transcripts. Ported from Crux (`src/main/rate-limits`, MIT):
 //
 //   Claude  GET https://api.anthropic.com/api/oauth/usage with the CLI's OAuth
 //           token (macOS keychain "Claude Code-credentials[-<hash>]", else
@@ -20,7 +20,7 @@
 //           through failures; failures back off from 30 s, doubling, to 5 min;
 //           a Retry-After is honoured.
 //
-// Two rules on top of Orca's:
+// Two rules on top of Crux's:
 //   - Every request and every CLI goes through the app's proxy when one is set,
 //     never direct instead.
 //   - A 403 from anyone stops all checks of that account until the app restarts:
@@ -30,7 +30,7 @@
 // Not ported, as nothing in this app uses them: WSL accounts; the retry with
 // the legacy keychain item (the default account already reads it, and an added
 // account reading it would show another account's plan); spending a free Codex
-// reset; Orca's job that repairs Codex's session index.
+// reset; Crux's job that repairs Codex's session index.
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, Mutex};
@@ -46,7 +46,7 @@ use crate::plan_usage_cli::{self, CliFailure};
 
 const CLAUDE_USAGE_URL: &str = "https://api.anthropic.com/api/oauth/usage";
 const CODEX_USAGE_URL: &str = "https://chatgpt.com/backend-api/wham/usage";
-/// The public Claude Code OAuth client and token endpoint (Orca's
+/// The public Claude Code OAuth client and token endpoint (Crux's
 /// `oauth-refresh.ts`, checked there against the installed CLI).
 const CLAUDE_TOKEN_URL: &str = "https://platform.claude.com/v1/oauth/token";
 const CLAUDE_CLIENT_ID: &str = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
@@ -55,7 +55,7 @@ const EXPIRY_BUFFER_MS: i64 = 5 * 60 * 1000;
 /// The provider is not the app's critical path: a slow network must never hold
 /// the status bar.
 const TIMEOUT: Duration = Duration::from_secs(10);
-/// How long a last good reading stands in through failures (Orca's figures).
+/// How long a last good reading stands in through failures (Crux's figures).
 const STALE_MS: i64 = 30 * 60 * 1000;
 const RATE_LIMITED_STALE_MS: i64 = 24 * 60 * 60 * 1000;
 /// The least time between two checks of one account, and between two hidden
@@ -132,7 +132,7 @@ enum Failure {
     /// The token was turned away (401): the CLI can renew it.
     Rejected(String),
     /// Nothing to read (not signed in, API-key billing, no CLI): no stand-in
-    /// and no back-off, as in Orca.
+    /// and no back-off, as in Crux.
     Unavailable(String),
     /// Anything else: network, a server error, an answer that did not parse.
     Other(String),
@@ -417,7 +417,7 @@ fn cli_failure(provider: &str, failure: CliFailure) -> Failure {
 
 // ─── Claude ─────────────────────────────────────────────────────────
 
-/// Orca's `fetchActiveClaudeRateLimits`, with the added-account renewal of its
+/// Crux's `fetchActiveClaudeRateLimits`, with the added-account renewal of its
 /// managed accounts.
 fn claude_plan(ctx: &Ctx, home: Option<&Path>, key: &str) -> Result<Reading, Failure> {
     // A Claude running as an added account renews that login itself; renewing
@@ -465,7 +465,7 @@ fn waiting_for_live() -> Failure {
 }
 
 /// A rejected token: let the CLI renew the login while it reads `/usage`, then
-/// ask the endpoint once more with whatever token it left (Orca's
+/// ask the endpoint once more with whatever token it left (Crux's
 /// `repairClaudeCredentialsThenRetryOAuth`).
 fn repair(ctx: &Ctx, home: Option<&Path>, key: &str, failed: Option<&str>, message: String) -> Result<Reading, Failure> {
     if !may_run_cli(key) {
@@ -503,7 +503,7 @@ fn cli_only(ctx: &Ctx, home: Option<&Path>, key: &str, otherwise: Failure) -> Re
     }
 }
 
-/// Orca's usage-panel supplement: when the endpoint gave the session or the
+/// Crux's usage-panel supplement: when the endpoint gave the session or the
 /// week but no Fable week, read `/usage` for what is missing. Not on Windows,
 /// where hidden terminals are less reliable, and not while a live Claude owns
 /// the login. For an added account whose login is in the keychain, the panel is
@@ -634,7 +634,7 @@ fn form_body(pairs: &[(&str, &str)]) -> String {
 }
 
 /// Merge a token-endpoint answer into the stored JSON, keeping every field the
-/// answer does not replace (Orca's `applyRefreshedToken`).
+/// answer does not replace (Crux's `applyRefreshedToken`).
 fn apply_refreshed_token(raw: &str, answer: &Value, now: i64) -> Option<String> {
     let mut stored: Value = serde_json::from_str(raw).ok()?;
     let access = answer.get("access_token")?.as_str().filter(|t| !t.trim().is_empty())?;
@@ -654,7 +654,7 @@ fn apply_refreshed_token(raw: &str, answer: &Value, now: i64) -> Option<String> 
 }
 
 /// Expired or within the buffer. No usable `expiresAt` counts as expiring, so a
-/// token without one is renewed rather than trusted for ever (Orca's rule).
+/// token without one is renewed rather than trusted for ever (Crux's rule).
 fn is_expiring(raw: &str, now: i64) -> bool {
     let Some(oauth) = serde_json::from_str::<Value>(raw).ok().and_then(|v| v.get("claudeAiOauth").cloned()) else {
         return false;
@@ -762,7 +762,7 @@ impl CredentialStore {
 
     fn write(&self, raw: &str) -> Result<(), String> {
         match self {
-            // Same call as Orca's: `-U` updates the item in place, keeping its
+            // Same call as Crux's: `-U` updates the item in place, keeping its
             // account name.
             Self::Keychain { service, account } => {
                 let account = account.as_deref().ok_or("no account name on the keychain item")?;
@@ -792,7 +792,7 @@ impl CredentialStore {
 /// `utilization` is the percentage used; `resets_at` is an ISO timestamp. Both
 /// names are the vendor's, verified against a live response. The Fable week is
 /// the `weekly_scoped` limit whose model is Fable (seen live), else one of the
-/// older top-level names Orca also reads.
+/// older top-level names Crux also reads.
 pub fn claude_windows_from(body: &Value) -> Vec<RateLimitWindow> {
     let window = |raw: &Value, window_minutes: u64, model: Option<&str>| -> Option<RateLimitWindow> {
         let used_percent = raw.get("utilization").or_else(|| raw.get("used_percentage"))?.as_f64()?;
@@ -838,7 +838,7 @@ pub fn claude_windows_from(body: &Value) -> Vec<RateLimitWindow> {
 /// both end up as unix SECONDS, which is what the rest of the app speaks.
 fn parse_reset(value: &Value) -> Option<i64> {
     if let Some(n) = value.as_i64() {
-        // Orca's rule: past 1e10 it can only be milliseconds.
+        // Crux's rule: past 1e10 it can only be milliseconds.
         return Some(if n > 10_000_000_000 { n / 1000 } else { n });
     }
     Some(iso8601_to_epoch_ms(value.as_str()?)? / 1000)
@@ -846,7 +846,7 @@ fn parse_reset(value: &Value) -> Option<i64> {
 
 // ─── Codex ──────────────────────────────────────────────────────────
 
-/// Orca's order: is anyone signed in, is Codex mid-rebuild, then the RPC, then
+/// Crux's order: is anyone signed in, is Codex mid-rebuild, then the RPC, then
 /// `/status` unless the RPC said the login itself is the problem; then the
 /// five-hour window from chatgpt.com if neither had it.
 fn codex_plan(ctx: &Ctx, home: Option<&Path>, key: &str) -> Result<Reading, Failure> {
@@ -877,7 +877,7 @@ fn codex_plan(ctx: &Ctx, home: Option<&Path>, key: &str) -> Result<Reading, Fail
     complete_codex_session(ctx.proxy.as_deref(), &folder, reading)
 }
 
-/// Orca's `supplementCodexSessionWindow`: a reading with the week but no
+/// Crux's `supplementCodexSessionWindow`: a reading with the week but no
 /// five-hour window asks chatgpt.com for it. A 403 there stops the account;
 /// any other failure keeps the reading as it is.
 fn complete_codex_session(proxy: Option<&str>, folder: &Path, mut reading: Reading) -> Result<Reading, Failure> {
@@ -949,7 +949,7 @@ fn codex_backend_reading(body: &Value) -> Option<Reading> {
 }
 
 /// Whether Codex's own state database says it is rebuilding its session index
-/// (`backfill_state`, read-only). Orca also counts a folder with no such record
+/// (`backfill_state`, read-only). Crux also counts a folder with no such record
 /// and 100+ sessions as rebuilding, because it then starts a job that drives
 /// the rebuild; this app has no such job, so only an explicit record counts,
 /// or checks could stop for good on an older Codex.
@@ -1164,7 +1164,7 @@ mod tests {
     }
 
     #[test]
-    fn expiry_follows_orcas_rule() {
+    fn expiry_follows_crux_rule() {
         let at = |ms: i64| format!(r#"{{"claudeAiOauth":{{"accessToken":"a","expiresAt":{ms}}}}}"#);
         assert!(is_expiring(&at(1_000), 1_000));
         assert!(is_expiring(&at(1_000 + EXPIRY_BUFFER_MS), 1_000), "inside the buffer");

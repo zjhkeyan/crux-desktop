@@ -115,7 +115,7 @@ export function mountEditor(options: {
   readOnly: boolean;
   lineNumbers: boolean;
   ariaLabel: string | undefined;
-  /** Shown while the document is empty, as Orca's markdown editor does. */
+  /** Shown while the document is empty, as Crux's markdown editor does. */
   placeholder: string | undefined;
   /** Read through a getter so a re-render's new closures are picked up without
    *  rebuilding the editor. */

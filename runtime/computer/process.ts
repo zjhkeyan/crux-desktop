@@ -1,6 +1,6 @@
 // The one place this layer starts a child process.
 //
-// Upstream (Orca) routed every spawn in the app through a much larger chokepoint
+// Upstream (Crux) routed every spawn in the app through a much larger chokepoint
 // that also resolved `.cmd`/`.bat` shims, built Windows command lines by hand and
 // verified process-tree termination. Nothing here spawns a shim: the programs are
 // `python3` and an absolute `powershell.exe`, so what survives is the one decision

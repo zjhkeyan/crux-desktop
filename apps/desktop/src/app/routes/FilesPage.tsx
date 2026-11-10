@@ -190,7 +190,7 @@ export function FilesPage({
   const crumbs = dir ? dir.split("/") : [];
   // In a pane the file opens BESIDE this one, so there is nothing to preview
   // here: the tree takes the whole pane, the way a file tree does in VS Code or
-  // in Orca's sidebar. Keeping the preview column gave every Files pane a dead
+  // in Crux's sidebar. Keeping the preview column gave every Files pane a dead
   // half reading "Select a file to preview it here" that could never fill.
   const isTree = Boolean(onOpenFile);
 

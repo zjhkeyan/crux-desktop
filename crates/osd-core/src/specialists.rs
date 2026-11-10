@@ -34,7 +34,8 @@ use crate::runtime::{
 };
 
 /// First frontmatter line of every specialist file the app manages.
-const MARKER: &str = "# Managed by Open Science Desktop (Specialists). Edits made here are overwritten.";
+const MARKER: &str = "# Managed by Crux Desktop (Specialists). Edits made here are overwritten.";
+const LEGACY_MARKER: &str = "# Managed by Open Science Desktop (Specialists). Edits made here are overwritten.";
 
 /// The runtime's own agents. A file with one of these names would replace the
 /// built-in agent rather than add a specialist.
@@ -233,13 +234,14 @@ fn split_frontmatter(text: &str) -> Option<(Vec<&str>, &str)> {
 
 /// True when the file was written by `render` — the app may rewrite it.
 fn is_managed(text: &str) -> bool {
-    split_frontmatter(text).is_some_and(|(lines, _)| lines.first() == Some(&MARKER))
+    split_frontmatter(text)
+        .is_some_and(|(lines, _)| lines.first().is_some_and(|&l| l == MARKER || l == LEGACY_MARKER))
 }
 
 /// Read back a file `render` wrote. None for anything else.
 pub fn parse(id: &str, text: &str) -> Option<Specialist> {
     let (lines, body) = split_frontmatter(text)?;
-    if lines.first() != Some(&MARKER) {
+    if !lines.first().is_some_and(|&l| l == MARKER || l == LEGACY_MARKER) {
         return None;
     }
     let json: String = lines[1..].iter().filter(|l| !l.trim_start().starts_with('#')).copied().collect();

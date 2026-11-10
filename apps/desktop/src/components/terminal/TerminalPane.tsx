@@ -279,7 +279,7 @@ export function TerminalPane({
       // Capture on the container runs before xterm's own listener on its textarea.
       const onInput = (event: Event) => punctuation.input(event as InputEvent);
       container.addEventListener("input", onInput, true);
-      // GPU renderer, as in VS Code and Orca: box-drawing and block characters
+      // GPU renderer, as in VS Code and Crux: box-drawing and block characters
       // are drawn as exact cell-sized shapes instead of font glyphs, so rules
       // and borders join up as in a native terminal. Without WebGL, or once
       // the GPU drops the context, xterm falls back to its DOM renderer.
@@ -640,7 +640,7 @@ export function TerminalPane({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leafId, t, available, build]);
 
-  /** Right-click, modelled on Orca's terminal menu (`TerminalContextMenu.tsx`):
+  /** Right-click, modelled on Crux's terminal menu (`TerminalContextMenu.tsx`):
    *  the clipboard actions first, because that is what a right-click in a
    *  terminal is usually for, then the pane's own layout actions. Without it
    *  the packaged app shows the WebView's page menu, whose "Open Link in New
@@ -836,7 +836,7 @@ const DRAW_STUCK_MS = 5_000;
 const RESIZE_REPLY_MS = 100;
 
 /**
- * Terminal defaults, borrowed from Orca's `lib/pane-manager/pane-terminal-options.ts`
+ * Terminal defaults, borrowed from Crux's `lib/pane-manager/pane-terminal-options.ts`
  * (MIT) — a set of settings it arrived at the hard way, each for a reason worth
  * keeping. The ones that change behaviour rather than looks:
  *

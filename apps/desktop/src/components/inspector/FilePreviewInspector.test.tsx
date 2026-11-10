@@ -379,7 +379,7 @@ describe("FilePreviewInspector — an editor pane", () => {
   it("opens editing, with no pencil to find first", async () => {
     render(<FilePreviewInspector data={py} onClose={() => {}} startEditing />);
 
-    // Orca's editor tabs ARE editors; a preview with a hidden pencil is not
+    // Crux's editor tabs ARE editors; a preview with a hidden pencil is not
     // what "open the file" means.
     expect(await screen.findByRole("textbox", { name: "Editing fit.py" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Edit this file" })).not.toBeInTheDocument();
@@ -402,7 +402,7 @@ describe("FilePreviewInspector — an editor pane", () => {
     expect(await screen.findByRole("textbox", { name: "Editing page.html" })).toBeInTheDocument();
   });
 
-  it("opens a markdown note on its text, with Orca's formatting toolbar", async () => {
+  it("opens a markdown note on its text, with Crux's formatting toolbar", async () => {
     render(<FilePreviewInspector data={md} onClose={() => {}} startEditing />);
 
     // An editor pane lands on the source, not on a rendered page with the
@@ -449,7 +449,7 @@ describe("FilePreviewInspector — an editor pane", () => {
     await userEvent.click(screen.getByRole("button", { name: "Quote" }));
 
     // The heading BECOMES a quote rather than being quoted as a heading —
-    // one marker per line, the way Orca's toolbar behaves.
+    // one marker per line, the way Crux's toolbar behaves.
     await waitFor(() =>
       expect((editor as HTMLTextAreaElement).value).toContain("> Findings"),
     );
@@ -486,7 +486,7 @@ describe("FilePreviewInspector — an editor pane", () => {
     await userEvent.click(editor);
     await userEvent.keyboard("x");
 
-    // Autosave, as Orca does — no Save button to hunt for.
+    // Autosave, as Crux does — no Save button to hunt for.
     await waitFor(() => expect(writeWorkspaceFile).toHaveBeenCalled(), { timeout: 3000 });
     // A light, not a word: "Saving…/Saved" sat against the buttons and read as
     // part of them. The state is the dot's label now.

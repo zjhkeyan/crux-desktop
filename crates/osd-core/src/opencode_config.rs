@@ -462,6 +462,9 @@ pub fn patch_config(existing: &str, patch: &Value) -> Result<String, String> {
         match (base, patch) {
             (Value::Object(b), Value::Object(p)) => {
                 for (k, v) in p {
+                    if v.as_str() == Some("__redacted__") && b.contains_key(k) {
+                        continue;
+                    }
                     match b.get_mut(k) {
                         Some(slot) if slot.is_object() && v.is_object() => merge(slot, v),
                         _ => {

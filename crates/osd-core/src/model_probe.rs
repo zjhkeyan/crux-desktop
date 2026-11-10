@@ -98,7 +98,7 @@ fn probe(base_url: &str, api_key: Option<&str>, kind: &str) -> Result<ProbeResul
 /// proxy, which a remote endpoint may need.
 fn client(target: &str) -> Result<reqwest::blocking::Client, String> {
     let mut builder = reqwest::blocking::Client::builder()
-        .user_agent("Open Science Desktop model probe")
+        .user_agent("Crux Desktop model probe")
         .timeout(Duration::from_secs(5));
     if is_loopback(target) {
         builder = builder.no_proxy();

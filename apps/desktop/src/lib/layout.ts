@@ -27,7 +27,7 @@ export type DockEdge = "left" | "right" | "top" | "bottom";
  * anyone's output — it is a tool sitting in the workspace, so it survives with
  * the layout rather than with a session.
  *
- * Borrowed in shape from Orca's `TabContentType` (MIT): a pane is a place, and
+ * Borrowed in shape from Crux's `TabContentType` (MIT): a pane is a place, and
  * what it holds is one tagged value — which is what lets a terminal, an editor
  * and a conversation share the same splitting, docking and persistence.
  */
@@ -44,7 +44,8 @@ export type PaneContent =
   | { kind: "terminal"; cwd?: string; name?: string; command?: string; agent?: TerminalAgent }
   | { kind: "files"; path?: string }
   | { kind: "notebook"; path: string; root?: FileRoot }
-  | { kind: "editor"; path: string; root?: FileRoot };
+  | { kind: "editor"; path: string; root?: FileRoot }
+  | { kind: "discovery"; runDir: string };
 
 /** The coding agent last seen running in a terminal — Claude Code or Codex —
  *  and the session it was in. `running`: it was still the terminal's
@@ -406,7 +407,7 @@ function initialSessionId(): string | null {
  * empty group (`tree === null`) shows the drag-a-session onboarding.
  *
  * Every Screen belongs to one project — Project → Screens → panes, the same
- * shape as Orca's worktree → tab groups → tabs — and the Screen bar shows the
+ * shape as Crux's worktree → tab groups → tabs — and the Screen bar shows the
  * active project's Screens only. Work filed under no project belongs to the
  * Default project.
  */
@@ -482,6 +483,7 @@ export function isPaneContent(v: unknown): v is PaneContent {
   }
   if (c.kind === "files") return c.path === undefined || typeof c.path === "string";
   if (c.kind === "notebook" || c.kind === "editor") return typeof c.path === "string";
+  if (c.kind === "discovery") return typeof c.runDir === "string";
   return false;
 }
 
@@ -1189,7 +1191,7 @@ export const useLayoutStore = create<LayoutState>((set, get) => {
     showDocumentPane: (content) => {
       // One document pane, reused. Clicking down a file tree used to leave a
       // pane per file, each narrower than the last, until nothing could be
-      // read — the same reason VS Code and Orca replace the preview tab
+      // read — the same reason VS Code and Crux replace the preview tab
       // instead of stacking one per click.
       const { tree } = get();
       const existing = tree

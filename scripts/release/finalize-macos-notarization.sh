@@ -114,7 +114,7 @@ ln -s /Applications "$staging_dir/Applications"
 
 rm -f "$dmg_path"
 hdiutil create \
-  -volname "Open Science" \
+  -volname "Crux" \
   -srcfolder "$staging_dir" \
   -format UDZO \
   -ov \

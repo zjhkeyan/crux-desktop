@@ -1,4 +1,4 @@
-// What the status bar's right-hand segments report, borrowed from Orca's
+// What the status bar's right-hand segments report, borrowed from Crux's
 // (`CaffeinateStatusSegment`, `ResourceUsageStatusSegment`, `PortsStatusSegment`).
 //
 // The common rule, and the reason these are worth having: everything reported
@@ -78,7 +78,7 @@ pub fn tree_of(rows: &[ProcessRow], root: u32) -> Vec<&ProcessRow> {
 
 /// One thing the user opened, and what it is costing.
 ///
-/// Borrowed from Orca's resource popover, which lists a row per session rather
+/// Borrowed from Crux's resource popover, which lists a row per session rather
 /// than one total: a workbench at 12 GB tells you it is heavy, and a row per
 /// terminal tells you WHICH pane to go and look at. Without the breakdown the
 /// number is a complaint you cannot act on.
@@ -295,7 +295,7 @@ pub struct AwakeState(pub Mutex<Option<Child>>);
 
 /// Hold the machine awake, or let it sleep again.
 ///
-/// Borrowed from Orca's `MacosSystemSleepAssertion`, including its arguments:
+/// Borrowed from Crux's `MacosSystemSleepAssertion`, including its arguments:
 /// `-i` prevents idle sleep and `-s` prevents system sleep on AC power, which
 /// is what "an agent is working, don't sleep" actually requires. Asking twice
 /// is a no-op rather than a second process.

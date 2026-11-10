@@ -135,7 +135,8 @@ export type PreviewKind =
   | "qcode"
   | "anomaly"
   | "bands"
-  | "phase";
+  | "phase"
+  | "crux-json";
 
 /** 3D mesh / CAD formats rendered by the three.js viewer. */
 export const MESH_EXTS = ["stl", "obj", "ply", "gltf", "glb"];
@@ -175,6 +176,15 @@ export function previewKindForName(filename: string): PreviewKind {
   const base = (filename.split(/[\\/]/).pop() ?? filename).toLowerCase();
   if (base === "doscar" || base.startsWith("doscar.")) return "dos";
   if (base === "eigenval" || base.startsWith("eigenval.")) return "bands";
+  if (
+    base === "crux_evolve_comparison.json" ||
+    base === "crux_evolve_comparison.json" ||
+    base === "comparison.json" ||
+    base === "verification_report.json" ||
+    base === "evolution_state.json"
+  ) {
+    return "crux-json";
+  }
   return previewKind(extOf(filename));
 }
 

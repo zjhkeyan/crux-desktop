@@ -137,9 +137,9 @@ fn control_path_pattern(dir: &Path) -> String {
 /// their cluster — a jump host, a different ControlPath, an identity file — wins,
 /// and our block only fills the gap. Sharing still works either way: master and
 /// clients read this same file, so they agree on whichever path won.
-pub fn managed_config(control_dir: &Path, user_config: Option<&Path>) -> String {
+pub fn managed_config(control_dir: &Path, user_config: Option<&Path>, known_hosts: &Path) -> String {
     let mut out = String::new();
-    out.push_str("# Managed by Open Science Desktop — regenerated on every start.\n");
+    out.push_str("# Managed by Crux Desktop — regenerated on every start.\n");
     out.push_str("# Edit ~/.ssh/config instead: it is included below and wins.\n\n");
     if let Some(user) = user_config {
         out.push_str(&format!("Include \"{}\"\n\n", user.to_string_lossy()));
@@ -147,8 +147,12 @@ pub fn managed_config(control_dir: &Path, user_config: Option<&Path>) -> String 
     out.push_str("# Fall back to the app's shared connection, so one interactive\n");
     out.push_str("# sign-in covers every later command on that host.\n");
     out.push_str("Host *\n");
-    out.push_str("  ControlMaster no\n");
-    out.push_str(&format!("  ControlPath {}\n", control_path_pattern(control_dir)));
+    out.push_str("  StrictHostKeyChecking accept-new\n");
+    out.push_str(&format!("  UserKnownHostsFile \"{}\"\n", known_hosts.to_string_lossy().replace('\\', "/").replace('"', "\\\"")));
+    if multiplexing_supported() {
+        out.push_str("  ControlMaster no\n");
+        out.push_str(&format!("  ControlPath {}\n", control_path_pattern(control_dir)));
+    }
     out
 }
 
@@ -172,7 +176,8 @@ pub fn ensure_config(app: &AppHandle) -> Result<PathBuf, String> {
     }
     let user = Some(home.join(".ssh").join("config")).filter(|p| p.is_file());
     let path = dir.join("config");
-    let body = managed_config(&sockets, user.as_deref());
+    let known_hosts = osd_core::remote_hosts::known_hosts_path(&crate::env_of(app))?;
+    let body = managed_config(&sockets, user.as_deref(), &known_hosts);
     if std::fs::read_to_string(&path).ok().as_deref() != Some(body.as_str()) {
         std::fs::write(&path, &body).map_err(|e| e.to_string())?;
     }
@@ -180,20 +185,8 @@ pub fn ensure_config(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(path)
 }
 
-/// The managed config path, or None when there is nothing for it to do — callers
-/// fall back to plain ssh, which is exactly the behaviour that predates this
-/// module, rather than losing remote compute over a config problem.
-///
-/// None on Windows: the only thing this config adds is connection sharing, which
-/// Windows' OpenSSH does not implement, and its `ControlMaster`/`ControlPath`
-/// lines would then be pure risk — handed via `-F` to every app- and
-/// agent-initiated `ssh`, `scp` and `sbatch` on the platform (`compute.rs`, and
-/// `OPENSCIENCE_SSH_CONFIG` in `runtime.rs`). Nothing there gains anything, and
-/// an ssh that rejects the options would take all of remote compute down with it.
+/// Host-key policy applies on every platform; connection sharing is Unix-only.
 pub fn config_path(app: &AppHandle) -> Option<PathBuf> {
-    if !multiplexing_supported() {
-        return None;
-    }
     ensure_config(app).ok()
 }
 
@@ -446,6 +439,78 @@ pub fn is_shared(app: &AppHandle, host: &str) -> bool {
         .status()
         .map(|s| s.success())
         .unwrap_or(false)
+}
+
+/// Pairing uses the existing dialog for passwords and institutional second factors.
+pub fn run_link_command(app: &AppHandle, host: &str, command: &std::process::Command) -> Result<String, String> {
+    let session_key = format!("link:{host}");
+    {
+        let state = app.state::<SshState>();
+        let mut sessions = state.sessions.lock().unwrap();
+        if sessions.contains_key(&session_key) {return Err("this server is already signing in".into());}
+        sessions.insert(session_key.clone(), Session {status:"connecting".into(),prompt:None,notice:None,error:None,writer:None,child:None});
+    }
+    let args: Vec<String> = command.get_args().map(|s| s.to_string_lossy().into_owned()).collect();
+    let program = command.get_program().to_string_lossy();
+    let Pty {writer, mut child, output} = match spawn_pty(&program, &args) {
+        Ok(pty) => pty,
+        Err(error) => {
+            app.state::<SshState>().sessions.lock().unwrap().remove(&session_key);
+            return Err(error);
+        }
+    };
+    {
+        let state = app.state::<SshState>();
+        let mut sessions = state.sessions.lock().unwrap();
+        if let Some(session) = sessions.get_mut(&session_key) {
+            session.writer = Some(writer);
+            session.child = Some(child);
+        } else {
+            let _ = child.kill(); let _ = child.wait();
+            return Err("SSH sign-in was cancelled".into());
+        }
+    }
+    publish(app);
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(CONNECT_TIMEOUT_SECS);
+    let mut seen = String::new();
+    let mut captured = String::new();
+    let result = loop {
+        if std::time::Instant::now() >= deadline {break Err("SSH sign-in timed out; reconnect and complete sign-in".into());}
+        if let Ok(chunk) = output.recv_timeout(std::time::Duration::from_millis(100)) {
+            if captured.len() + chunk.len() <= 1024 * 1024 {captured.push_str(&chunk);}
+            seen.push_str(&chunk);
+            if seen.len() > 8192 {
+                let cut = (seen.len()-4096..=seen.len()).find(|i| seen.is_char_boundary(*i)).unwrap();
+                seen = seen.split_off(cut);
+            }
+            let state = app.state::<SshState>();
+            let mut sessions = state.sessions.lock().unwrap();
+            let Some(session) = sessions.get_mut(&session_key) else {break Err("SSH sign-in was cancelled".into());};
+            session.prompt = pending_prompt(&seen);
+            session.notice = notice_from(&seen);
+            session.status = if session.prompt.is_some() {"prompt".into()} else {"connecting".into()};
+            drop(sessions);
+            publish(app);
+        }
+        let state = app.state::<SshState>();
+        let mut sessions = state.sessions.lock().unwrap();
+        let Some(session) = sessions.get_mut(&session_key) else {break Err("SSH sign-in was cancelled".into());};
+        let Some(child) = session.child.as_mut() else {break Err("SSH sign-in was cancelled".into());};
+        match child.try_wait() {
+            Ok(Some(status)) if status.success() => break Ok(()),
+            Ok(Some(_)) => break Err("SSH operation failed; verify the server address and sign in again".into()),
+            Err(error) => break Err(error.to_string()),
+            Ok(None) => (),
+        }
+    };
+    if let Some(mut session) = app.state::<SshState>().sessions.lock().unwrap().remove(&session_key) {
+        if let Some(mut child) = session.child.take() {let _ = child.kill(); let _ = child.wait();}
+    }
+    for chunk in output.try_iter() {
+        if captured.len() + chunk.len() <= 1024 * 1024 {captured.push_str(&chunk);}
+    }
+    publish(app);
+    result.map(|()| captured)
 }
 
 /// Open (or adopt) the shared connection for `host`. Returns immediately: the
@@ -711,21 +776,23 @@ mod tests {
 
     #[test]
     fn managed_config_lets_the_users_own_config_win() {
-        let cfg = managed_config(Path::new("/tmp/os-ssh-1"), Some(Path::new("/home/a/.ssh/config")));
+        let cfg = managed_config(Path::new("/tmp/os-ssh-1"), Some(Path::new("/home/a/.ssh/config")), Path::new("/data/ssh/known_hosts"));
         let include = cfg.find("Include").expect("includes the user's config");
         let ours = cfg.find("Host *").expect("declares the fallback block");
         // ssh keeps the FIRST value it obtains, so the user's config must be
         // read before our fallback or we would silently override their setup.
         assert!(include < ours, "the user's config must be included first");
-        assert!(cfg.contains("ControlPath /tmp/os-ssh-1/%C"));
-        assert!(cfg.contains("ControlMaster no"));
+        assert_eq!(cfg.contains("ControlPath /tmp/os-ssh-1/%C"), multiplexing_supported());
+        assert_eq!(cfg.contains("ControlMaster no"), multiplexing_supported());
+        assert!(cfg.contains("StrictHostKeyChecking accept-new"));
+        assert!(cfg.contains("UserKnownHostsFile \"/data/ssh/known_hosts\""));
     }
 
     #[test]
     fn managed_config_without_a_user_config_still_shares() {
-        let cfg = managed_config(Path::new("/tmp/os-ssh-1"), None);
+        let cfg = managed_config(Path::new("/tmp/os-ssh-1"), None, Path::new("/data/ssh/known_hosts"));
         assert!(!cfg.contains("Include"));
-        assert!(cfg.contains("ControlPath /tmp/os-ssh-1/%C"));
+        assert_eq!(cfg.contains("ControlPath /tmp/os-ssh-1/%C"), multiplexing_supported());
     }
 
     #[test]

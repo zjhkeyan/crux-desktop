@@ -23,13 +23,13 @@ const foldAll = (events: OpenCodeEvent[], from: FoldState = empty): FoldState =>
   events.reduce((s, e) => foldEvent(s, e), from);
 
 describe("tidyToolTitle", () => {
-  it("shows workspace files by their relative path", () => {
-    expect(tidyToolTitle("/Users/asq/Documents/OpenScience/demo/analyze.py")).toBe("demo/analyze.py");
-    expect(tidyToolTitle("mkdir -p /Users/asq/Documents/OpenScience/demo_analysis")).toBe(
+  it.each(["Crux", "ScienceCowork", "OpenScience"])("shows %s workspace files by their relative path", (directory) => {
+    expect(tidyToolTitle(`/Users/asq/Documents/${directory}/demo/analyze.py`)).toBe("demo/analyze.py");
+    expect(tidyToolTitle(`mkdir -p /Users/asq/Documents/${directory}/demo_analysis`)).toBe(
       "mkdir -p demo_analysis",
     );
     // OpenCode's write-tool titles drop the leading slash — must still relativize.
-    expect(tidyToolTitle("Users/asq/Documents/OpenScience/demo_analysis/analyze.py")).toBe(
+    expect(tidyToolTitle(`Users/asq/Documents/${directory}/demo_analysis/analyze.py`)).toBe(
       "demo_analysis/analyze.py",
     );
   });

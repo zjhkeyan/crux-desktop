@@ -1,6 +1,6 @@
 // swift-tools-version: 6.0
 //
-// Ported from Orca (github.com/stablyai/orca, MIT, Copyright (c) 2026 Lovecast
+// Ported from Crux (github.com/ai4s-research/open-science, MIT, Copyright (c) 2026 Lovecast
 // Inc.) — its accessibility-first computer-use design is the one this follows.
 
 import PackageDescription

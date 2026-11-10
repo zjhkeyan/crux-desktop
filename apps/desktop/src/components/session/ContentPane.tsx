@@ -16,6 +16,7 @@ import { InlineName } from "@/components/ui/InlineName";
 import { NotebookEditor } from "@/components/notebook/NotebookEditor";
 import { FilesPage } from "@/app/routes/FilesPage";
 import { FilePreviewInspector } from "@/components/inspector/FilePreviewInspector";
+import { CruxDiscoveryTile } from "@/components/canvas/CruxDiscoveryTile";
 import { HOVER_REVEAL } from "@/components/inspector/RightPane";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { cn } from "@/lib/cn";
@@ -228,6 +229,9 @@ export function ContentPane({
       return (
         <NotebookEditor path={content.path} root={content.root} onClose={onClose} compactHeader />
       );
+
+    case "discovery":
+      return <CruxDiscoveryTile runDir={content.runDir} className="h-full" />;
 
     case "editor":
       return (

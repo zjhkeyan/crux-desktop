@@ -4,11 +4,11 @@
 //
 // The layout records both on the terminal's pane so a relaunch reopens the
 // shell where it was and resumes the agent (`claude --resume <id>` /
-// `codex resume <id>`), the way Orca restores an agent pane.
+// `codex resume <id>`), the way Crux restores an agent pane.
 //
 // How each is found:
 // - cwd: the SHELL's own working directory — `/proc/<pid>/cwd` on Linux,
-//   `proc_pidinfo(PROC_PIDVNODEPATHINFO)` on macOS (no subprocess; Orca shells
+//   `proc_pidinfo(PROC_PIDVNODEPATHINFO)` on macOS (no subprocess; Crux shells
 //   out to lsof for this).
 // - agent: the terminal's foreground process group (tcgetpgrp on the pty) and
 //   its direct children, since `claude`/`codex` may be started through a thin
@@ -735,7 +735,7 @@ mod platform {
         )
     }
 
-    /// Files `pid` holds open. `lsof`, as Orca uses: the kernel call for an fd's
+    /// Files `pid` holds open. `lsof`, as Crux uses: the kernel call for an fd's
     /// path needs a struct libc does not bind. Called once per Codex process
     /// (the result is cached upstream).
     pub fn open_files(pid: u32) -> Vec<PathBuf> {

@@ -160,7 +160,7 @@ export function windowFigure(totals: TokenTotals): string | null {
 
 /** What one agent's row shows on the right.
  *
- *  Following Orca's status bar (`UsageRosterPanel`): one row per AGENT, not one
+ *  Following Crux's status bar (`UsageRosterPanel`): one row per AGENT, not one
  *  row per number, and the row carries a single metric — the one that is
  *  actually informative.
  *
@@ -194,14 +194,14 @@ export function agentMetric(
 }
 
 /** One clamp and round for the bar width and the label, so they never disagree
- *  at a .5 fraction (Orca's `clampUsedPercent`). */
+ *  at a .5 fraction (Crux's `clampUsedPercent`). */
 export function clampPercent(usedPercent: number): number {
   if (!Number.isFinite(usedPercent)) return 0;
   return Math.max(0, Math.min(100, Math.round(usedPercent)));
 }
 
 /** The filled part of a meter is the app's own accent until the figure is worth
- *  a warning — Orca's 60/80 thresholds, so the bar and its number always agree.
+ *  a warning — Crux's 60/80 thresholds, so the bar and its number always agree.
  *
  *  Not a muted grey: against this app's surfaces a grey fill reads as an empty
  *  track, so every bar looked blank whatever it said. */
@@ -220,7 +220,7 @@ export function usageTextTone(usedPercent: number): string {
 /**
  * Compact duration, flooring to whole units: `47m`, `3h 54m`, `6d 7h`.
  *
- * Borrowed from Orca's `formatResetDuration` (shared/rate-limit-reset-format).
+ * Borrowed from Crux's `formatResetDuration` (shared/rate-limit-reset-format).
  * The minutes matter: "4h" for anything between four and five hours is the
  * difference between finishing the task and waiting.
  */
@@ -267,7 +267,7 @@ export function formatResetIn(resetsAtSeconds: number | null, now = Date.now()):
 }
 
 /**
- * The windows one agent reports, in the order Orca shows them: the shortest
+ * The windows one agent reports, in the order Crux shows them: the shortest
  * first, so the one that bites soonest is read first.
  *
  * Only Codex records these. Claude Code's transcripts carry token counts and
@@ -313,7 +313,7 @@ function sortByWindow(windows: RateLimitWindow[]): RateLimitWindow[] {
 }
 
 /** The window nearest its limit — what the collapsed bar and Compact mode show.
- *  Urgency is by CONSUMPTION, as in Orca: the tightest window is the one that
+ *  Urgency is by CONSUMPTION, as in Crux: the tightest window is the one that
  *  stops the work. */
 export function tightestWindow(windows: RateLimitWindow[]): RateLimitWindow | null {
   if (windows.length === 0) return null;

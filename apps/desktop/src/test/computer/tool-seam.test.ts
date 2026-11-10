@@ -287,7 +287,7 @@ describe('provider discovery', () => {
 
   it('points at the helper executable inside the macOS app bundle', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'osd-computer-use-test-'))
-    const app = join(dir, 'Open Science Computer Use.app')
+    const app = join(dir, 'Crux Computer Use.app')
     await mkdir(join(app, 'Contents', 'MacOS'), { recursive: true })
     await writeFile(join(app, 'Contents', 'MacOS', 'osd-computer-use-macos'), '', 'utf8')
     process.env.OPENSCIENCE_COMPUTER_USE_DIR = dir

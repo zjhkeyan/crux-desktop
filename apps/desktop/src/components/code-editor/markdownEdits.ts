@@ -9,7 +9,7 @@
 
 /** Line prefixes the toolbar owns. Applying one replaces another (a heading
  *  becomes a quote, not a quoted heading), and applying the one a line already
- *  has removes it — Orca's toolbar toggles the same way. */
+ *  has removes it — Crux's toolbar toggles the same way. */
 const OWNED_PREFIX = /^(\s*)(#{1,6} |> |- \[[ xX]\] |- |\d+\. )?/;
 
 /**

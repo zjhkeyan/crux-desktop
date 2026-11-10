@@ -712,6 +712,7 @@ fn audit_call(req: &Request) -> Option<AuditCall> {
         return match (m, segs.as_slice()) {
             ("POST", ["login"]) => call("login", field("name"), None),
             ("POST", ["logout"]) => call("logout", None, None),
+            ("POST", ["discovery" | "crux", "exec"]) => call("discovery.exec", field("host"), None),
             ("POST", ["sessions"]) => call("session.create", field("directory"), field("title")),
             ("DELETE", ["sessions", _]) => call("session.delete", id(1), None),
             ("POST", ["sessions", _, "prompt"]) => call("session.prompt", id(1), words(field("text").unwrap_or_default())),
@@ -820,8 +821,22 @@ fn audit_record(ctx: &Ctx, req: &Request, stream: &TcpStream, mut call: AuditCal
     );
 }
 
+fn agent_mutation_forbidden(req: &Request) -> bool {
+    if matches!(req.method.as_str(), "GET" | "HEAD" | "OPTIONS")
+        || !req.headers.iter().any(|(key, value)| key == "x-crux-actor" && value.eq_ignore_ascii_case("agent")) {
+        return false;
+    }
+    let path = percent_decode(&req.path);
+    path.split('/').any(|part| matches!(part, "permission" | "permissions" | "approval" | "approvals" | "settings" | "opencode-config" | "config"))
+}
+
 fn route(stream: &mut TcpStream, req: &Request, ctx: &Ctx) {
     let path = req.path.as_str();
+
+    if agent_mutation_forbidden(req) {
+        respond_json(stream, 403, "{\"error\":\"discovery agents cannot mutate permissions, approvals, or settings\"}");
+        return;
+    }
 
     // Liveness — open (carries no capability).
     if req.method == "GET" && path == "/v1/health" {
@@ -917,19 +932,23 @@ fn route(stream: &mut TcpStream, req: &Request, ctx: &Ctx) {
     }
 
     // ---- transparent OpenCode proxy (the SPA's OpenCodeClient talks here) ----
-    if principal(req, ctx).is_none() {
+    let Some(who) = principal(req, ctx) else {
         respond_json(stream, 401, "{\"error\":\"unauthorized\"}");
         return;
-    }
+    };
     if ctx.read_only() && req.method != "GET" {
         respond_json(stream, 403, "{\"error\":\"token is read-only\"}");
         return;
     }
-    // Secrets never cross the wire (AGENTS.md), and the gateway's own scoped
-    // routes are the only way in to files and terminals. See `desktop_only`.
-    if let Some(reason) = desktop_only(&req.method, path) {
-        respond_json(stream, 403, &err_json(reason));
-        return;
+    // Secrets never cross the wire on reads (`redact_config`), and the gateway's
+    // own scoped routes are the only way in to files and terminals. The owner
+    // token (`Principal::Token`) may manage provider credentials, sign-ins, and
+    // config from the Web workbench; guest accounts stay restricted (`desktop_only`).
+    if !(matches!(who, Principal::Token) && owner_config_route(path)) {
+        if let Some(reason) = desktop_only(&req.method, path) {
+            respond_json(stream, 403, &err_json(reason));
+            return;
+        }
     }
     // OpenCode 2's stream is global; each client keeps to its own folder.
     if req.method == "GET" && path == "/api/event" {
@@ -1057,7 +1076,7 @@ fn edit_layout<T>(ctx: &Ctx, who: &Principal, edit: impl FnOnce(&mut serde_json:
     Ok(out)
 }
 
-/// `{"session": "<id>"}` or `{"terminal": {"cwd": "<dir>"}}` (or `"terminal": true`).
+/// `{"session": "<id>"}`, `{"terminal": {"cwd": "<dir>"}}`, or `{"discovery": {"runDir": "<dir>"}}`.
 fn pane_of(v: &serde_json::Value) -> Result<crate::screens::Pane, String> {
     if let Some(id) = v["session"].as_str().filter(|s| !s.is_empty()) {
         return Ok(crate::screens::Pane::Session(id.to_string()));
@@ -1066,7 +1085,16 @@ fn pane_of(v: &serde_json::Value) -> Result<crate::screens::Pane, String> {
         let text = |k: &str| v["terminal"][k].as_str().filter(|s| !s.trim().is_empty()).map(str::to_string);
         return Ok(crate::screens::Pane::Terminal { cwd: text("cwd"), command: text("command") });
     }
-    Err("a pane is {\"session\": id} or {\"terminal\": {\"cwd\": dir, \"command\": cmd}}".into())
+    if let Some(run_dir) = v["discovery"]
+        .as_str()
+        .or_else(|| v["discovery"]["runDir"].as_str())
+        .filter(|s| !s.trim().is_empty())
+    {
+        return Ok(crate::screens::Pane::Discovery {
+            run_dir: run_dir.trim().to_string(),
+        });
+    }
+    Err("a pane is {\"session\": id}, {\"terminal\": {\"cwd\": dir, \"command\": cmd}}, or {\"discovery\": {\"runDir\": dir}}".into())
 }
 
 /// The settings live in the desktop window; a headless server has none.
@@ -1102,7 +1130,7 @@ fn settings_request(stream: &mut TcpStream, req: &Request, ctx: &Ctx) {
     };
     let reason = body["reason"].as_str().map(str::trim).unwrap_or("");
     if reason.is_empty() {
-        return respond_json(stream, 400, &err_json("say why (osd: --reason \"…\"): the user reads it before deciding"));
+        return respond_json(stream, 400, &err_json("say why (crux: --reason \"…\"): the user reads it before deciding"));
     }
     let origin = req.header("x-osd-origin-session").filter(|v| !v.is_empty()).map(str::to_string);
     let (id, replaces) = crate::settings_requests::open(true, origin.clone());
@@ -1175,6 +1203,53 @@ fn screen_new(stream: &mut TcpStream, req: &Request, ctx: &Ctx, who: &Principal)
 fn v1(stream: &mut TcpStream, req: &Request, ctx: &Ctx, rest: &str, who: &Principal) {
     let segs: Vec<&str> = rest.trim_matches('/').split('/').collect();
     match (req.method.as_str(), segs.as_slice()) {
+        ("GET", ["discovery" | "crux" | "coral", view @ ("board" | "tree" | "archive" | "radio" | "head" | "egress")]) => {
+            let result = req
+                .query_get("run_dir")
+                .or_else(|| req.query_get("coral_dir"))
+                .ok_or_else(|| "run_dir is required".to_string())
+                .and_then(|dir| crate::crux_views::scoped_run_dir(&ctx.env, &dir))
+                .and_then(|dir| match *view {
+                    "board" => crate::crux_views::read_board_view(&dir),
+                    "tree" => crate::crux_views::read_tree_view(&dir, req.query_get("commit").as_deref()),
+                    "archive" => crate::crux_views::read_archive_view(&dir),
+                    "radio" => crate::crux_views::read_radio_view(&dir),
+                    "egress" => crate::crux_views::read_egress_view(&dir),
+                    _ => crate::crux_views::read_ledger_head(&dir),
+                });
+            match result {
+                Ok(value) => respond_json(stream, 200, &value.to_string()),
+                Err(error) => respond_json(stream, 400, &err_json(&error)),
+            }
+        }
+
+        ("POST", ["discovery" | "crux", "exec"]) => {
+            #[derive(serde::Deserialize)]
+            #[serde(deny_unknown_fields)]
+            struct ExecRequest { argv: Vec<String>, host: Option<String> }
+            let result = serde_json::from_slice::<ExecRequest>(&req.body).map_err(|e| e.to_string())
+                .and_then(|body| {
+                    let agent = req.headers.iter().any(|(k,v)| k == "x-crux-actor" && v.eq_ignore_ascii_case("agent"));
+                    crate::link::validate_discovery_argv(&body.argv, agent)?;
+                    if let Some(host) = body.host.filter(|h| !h.is_empty() && h != "local") {
+                        let profile = crate::remote_hosts::find_host(&ctx.env, &host)?;
+                        let config = crate::link::openssh::OpenSshConfig::new(&ctx.env, profile)?;
+                        let mut transport = crate::link::openssh::OpenSshTransport::new(config);
+                        use crate::link::LinkTransport;
+                        transport.connect()?;
+                        let mut argv = vec!["crux".into(), "discovery".into()];
+                        argv.extend(body.argv);
+                        transport.exec_remote(&argv)
+                    } else {
+                        crate::link::run_crux_command(&ctx.env, &body.argv)
+                    }
+                });
+            match result {
+                Ok(output) => respond_json(stream, 200, &serde_json::to_string(&output).unwrap()),
+                Err(error) => respond_json(stream, 400, &err_json(&error)),
+            }
+        }
+
         ("GET", ["whoami"]) => {
             let mode = if ctx.read_only() { "read-only" } else { "full" };
             let user = match who {
@@ -1370,9 +1445,20 @@ fn v1(stream: &mut TcpStream, req: &Request, ctx: &Ctx, rest: &str, who: &Princi
         // window needed, and a CLI that can create sessions but not the project
         // to put them in is only half a tool.
         ("POST", ["projects"]) => {
+            if let Some(path) = json_str_field(&req.body, "path").filter(|s| !s.trim().is_empty()) {
+                let mode = json_str_field(&req.body, "mode").filter(|s| !s.trim().is_empty());
+                return match crate::project::import_project(&ctx.env, path, mode) {
+                    Ok(info) => respond_json(
+                        stream,
+                        200,
+                        &serde_json::to_string(&info).unwrap_or_else(|_| "{}".into()),
+                    ),
+                    Err(e) => respond_json(stream, 400, &err_json(&e)),
+                };
+            }
             let name = json_str_field(&req.body, "name").unwrap_or_default();
             if name.trim().is_empty() {
-                return respond_json(stream, 400, &err_json("missing name"));
+                return respond_json(stream, 400, &err_json("missing name or path"));
             }
             match crate::project::create_project(&ctx.env, name.trim()) {
                 Ok(info) => respond_json(
@@ -1525,19 +1611,26 @@ fn v1(stream: &mut TcpStream, req: &Request, ctx: &Ctx, rest: &str, who: &Princi
                 Err(e) => respond_json(stream, 404, &err_json(&e)),
             }
         }
-        // The desktop window's view only: a browser shows what its user picks.
-        ("POST", ["screens", id, "show"]) => match (who, &ctx.on_show_screen) {
-            (Principal::User { .. }, _) => respond_json(stream, 403, &err_json("an account's Screens are shown by its own browser")),
-            (_, None) => respond_json(stream, 409, &err_json("no desktop window to show it in")),
-            (_, Some(show)) => {
-                let known = crate::web_accounts::read_desktop_layout(&ctx.env)
-                    .and_then(|(_, j)| serde_json::from_str::<serde_json::Value>(&j).ok())
-                    .is_some_and(|l| l["groups"].as_array().is_some_and(|g| g.iter().any(|g| g["id"] == *id)));
-                if known {
-                    show(id);
-                    respond_json(stream, 200, "{\"ok\":true}");
-                } else {
-                    respond_json(stream, 404, &err_json(&format!("no Screen {id}")));
+        // The desktop window's view or headless server's activeGroupId.
+        ("POST", ["screens", id, "show"]) => match who {
+            Principal::User { .. } => respond_json(stream, 403, &err_json("an account's Screens are shown by its own browser")),
+            Principal::Token => {
+                let res = edit_layout(ctx, who, |l| {
+                    let known = l["groups"].as_array().is_some_and(|g| g.iter().any(|g| g["id"] == *id));
+                    if !known {
+                        return Err(format!("no Screen {id}"));
+                    }
+                    l["activeGroupId"] = serde_json::json!(id);
+                    Ok(())
+                });
+                match res {
+                    Ok(()) => {
+                        if let Some(show) = &ctx.on_show_screen {
+                            show(id);
+                        }
+                        respond_json(stream, 200, "{\"ok\":true}");
+                    }
+                    Err(e) => respond_json(stream, 404, &err_json(&e)),
                 }
             }
         },
@@ -1568,8 +1661,9 @@ fn v1(stream: &mut TcpStream, req: &Request, ctx: &Ctx, rest: &str, who: &Princi
             Err(e) => respond_json(stream, 502, &err_json(&e)),
         },
         ("GET", ["events"]) => events(stream, ctx),
-        // OpenCode's config as a web client sees it: keys redacted, and only
-        // the default model writable — the rest is managed on the desktop.
+        // OpenCode's config as a web client sees it: keys redacted on read;
+        // owner token can configure providers/MCP/models while guest accounts
+        // may only change the default model.
         ("GET", ["opencode-config"]) => match crate::runtime::read_opencode_config(&ctx.env) {
             Ok(mut cfg) => {
                 redact_secrets(&mut cfg);
@@ -1578,11 +1672,68 @@ fn v1(stream: &mut TcpStream, req: &Request, ctx: &Ctx, rest: &str, who: &Princi
             Err(e) => respond_json(stream, 500, &err_json(&e)),
         },
         ("PATCH", ["opencode-config"]) => {
-            if !body_only_sets_model(&req.body) {
+            if !matches!(who, Principal::Token) && !body_only_sets_model(&req.body) {
                 return respond_json(stream, 403, &err_json("provider/model config is managed on the desktop"));
             }
             let patch: serde_json::Value = serde_json::from_slice(&req.body).unwrap_or_default();
             match crate::runtime::patch_opencode_config(&ctx.env, patch) {
+                Ok(()) => respond_json(stream, 200, "{\"ok\":true}"),
+                Err(e) => respond_json(stream, 400, &err_json(&e)),
+            }
+        }
+        ("DELETE", ["opencode-config", section, key]) => {
+            if !matches!(who, Principal::Token) {
+                return respond_json(stream, 403, &err_json("provider/model config is managed on the desktop"));
+            }
+            match crate::runtime::remove_config_entry(&ctx.env, (*section).to_string(), percent_decode(key)) {
+                Ok(()) => respond_json(stream, 200, "{\"ok\":true}"),
+                Err(e) => respond_json(stream, 400, &err_json(&e)),
+            }
+        }
+        ("POST", ["probe-models"]) => {
+            if !matches!(who, Principal::Token) {
+                return respond_json(stream, 403, &err_json("provider/model config is managed on the desktop"));
+            }
+            let Some(base_url) = json_str_field(&req.body, "baseUrl") else {
+                return respond_json(stream, 400, "{\"error\":\"missing baseUrl\"}");
+            };
+            let api_key = json_str_field(&req.body, "apiKey");
+            let kind = json_str_field(&req.body, "kind").unwrap_or_else(|| "openai".into());
+            match crate::model_probe::probe_endpoint_models(&base_url, api_key.as_deref(), &kind) {
+                Ok(res) => respond_json(stream, 200, &serde_json::to_string(&res).unwrap_or_else(|_| "{}".into())),
+                Err(e) => respond_json(stream, 400, &err_json(&e)),
+            }
+        }
+        ("GET", ["agent-models"]) => match crate::runtime::get_agent_models(&ctx.env) {
+            Ok(v) => respond_json(stream, 200, &v.to_string()),
+            Err(e) => respond_json(stream, 500, &err_json(&e)),
+        },
+        ("POST", ["agent-models"]) => {
+            if !matches!(who, Principal::Token) {
+                return respond_json(stream, 403, &err_json("provider/model config is managed on the desktop"));
+            }
+            let Some(agent) = json_str_field(&req.body, "agent") else {
+                return respond_json(stream, 400, "{\"error\":\"missing agent\"}");
+            };
+            let model = json_str_field(&req.body, "model").unwrap_or_default();
+            match crate::runtime::set_agent_model(&ctx.env, agent, model) {
+                Ok(()) => respond_json(stream, 200, "{\"ok\":true}"),
+                Err(e) => respond_json(stream, 400, &err_json(&e)),
+            }
+        }
+        ("GET", ["agent-variants"]) => match crate::runtime::get_agent_variants(&ctx.env) {
+            Ok(v) => respond_json(stream, 200, &v.to_string()),
+            Err(e) => respond_json(stream, 500, &err_json(&e)),
+        },
+        ("POST", ["agent-variants"]) => {
+            if !matches!(who, Principal::Token) {
+                return respond_json(stream, 403, &err_json("provider/model config is managed on the desktop"));
+            }
+            let Some(agent) = json_str_field(&req.body, "agent") else {
+                return respond_json(stream, 400, "{\"error\":\"missing agent\"}");
+            };
+            let variant = json_str_field(&req.body, "variant").unwrap_or_default();
+            match crate::runtime::set_agent_variant(&ctx.env, agent, variant) {
                 Ok(()) => respond_json(stream, 200, "{\"ok\":true}"),
                 Err(e) => respond_json(stream, 400, &err_json(&e)),
             }
@@ -1848,6 +1999,9 @@ fn proxy_opencode(stream: &mut TcpStream, req: &Request, ctx: &Ctx) {
             Ok(r) => {
                 let status = r.status().as_u16();
                 let body = r.bytes().map(|b| b.to_vec()).unwrap_or_default();
+                if req.method != "GET" && (200..300).contains(&status) {
+                    crate::crux_bridge::sync(&ctx.env);
+                }
                 respond(stream, status, "application/json; charset=utf-8", &redact_config(&body));
             }
             Err(e) => respond_json(stream, 502, &err_json(&format!("upstream: {e}"))),
@@ -1855,6 +2009,19 @@ fn proxy_opencode(stream: &mut TcpStream, req: &Request, ctx: &Ctx) {
         return;
     }
     forward(stream, rb.send().map_err(|e| e.to_string()));
+}
+
+/// OpenCode provider/credential/config routes that the owner token
+/// (`Principal::Token`) may drive from the Web workbench.
+fn owner_config_route(path: &str) -> bool {
+    let under = |prefix: &str| path == prefix || path.starts_with(&format!("{prefix}/"));
+    under("/auth")
+        || under("/api/credential")
+        || under("/api/integration")
+        || under("/api/experimental/config")
+        || under("/api/experimental/mcp")
+        || under("/api/experimental/client-mcp")
+        || under("/api/plugin")
 }
 
 /// The OpenCode routes a remote client may not use, and why. Credentials and
@@ -1892,9 +2059,19 @@ fn desktop_only(method: &str, path: &str) -> Option<&'static str> {
 /// OpenCode reads that can carry API keys (provider settings, MCP
 /// environments) — redacted before they leave the machine.
 fn is_config_path(path: &str) -> bool {
-    ["/api/config", "/api/provider", "/api/model", "/api/integration", "/api/mcp", "/api/agent"]
-        .iter()
-        .any(|p| path == *p || path.starts_with(&format!("{p}/")))
+    [
+        "/api/config",
+        "/api/provider",
+        "/api/model",
+        "/api/integration",
+        "/api/credential",
+        "/api/mcp",
+        "/api/agent",
+        "/api/experimental/config",
+        "/api/experimental/mcp",
+    ]
+    .iter()
+    .any(|p| path == *p || path.starts_with(&format!("{p}/")))
 }
 
 /// True only for a JSON object body whose sole key is `model` — the one config
@@ -3218,6 +3395,49 @@ pub fn regenerate_gateway_token(env: &Env, state: &GatewayState) -> Result<Gatew
 mod tests {
     use super::*;
 
+    #[cfg(unix)]
+    #[test]
+    fn discovery_exec_and_agent_guard_are_enforced_over_http() {
+        use std::os::unix::fs::PermissionsExt;
+        let (env, dir) = env_with_recorded_port("discovery-exec", None);
+        let bin = crate::crux_bridge::bin_dir(&env).unwrap();
+        std::fs::create_dir_all(&bin).unwrap();
+        let engine = bin.join("crux-engine");
+        std::fs::write(&engine, "#!/bin/sh\nprintf '%s\\n' \"$@\"\n").unwrap();
+        std::fs::set_permissions(&engine, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let state = GatewayState::default();
+        let port = start_at(&env, &state, &read_persisted(&env), None).unwrap();
+        let http = reqwest::blocking::Client::builder().no_proxy().build().unwrap();
+        for path in ["/api/session/s/permission/p/reply", "/v1/permissions/p/reply", "/v1/settings/requests", "/v1/opencode-config"] {
+            let response = http.post(format!("http://127.0.0.1:{port}{path}")).bearer_auth("t").header("X-Crux-Actor", "agent").body("{}").send().unwrap();
+            assert_eq!(response.status().as_u16(), 403, "{path}");
+        }
+        let (status, body) = call(port, "POST", "/v1/discovery/exec", r#"{"argv":["show","literal & ^ ! $(no-shell)"]}"#);
+        assert_eq!(status, 200, "{body}");
+        let output: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(output["stdout"], "show\nliteral & ^ ! $(no-shell)\n");
+        assert_eq!(call(port, "POST", "/v1/discovery/exec", r#"{"argv":["sh","-c","bad"]}"#).0, 400);
+        assert_eq!(call_as(port, "POST", "/v1/discovery/exec", None, r#"{"argv":["board"]}"#).0, 401);
+        stop(&env, &state);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn agent_header_blocks_mutations_across_all_proxy_paths() {
+        for path in ["/api/session/s/permission/p/reply", "/v1/permissions/p/reply", "/v1/settings", "/v1/settings/requests", "/v1/opencode-config", "/v1/opencode/api/config", "/api/approval/reply"] {
+            let request = Request {method:"POST".into(),path:path.into(),query:String::new(),headers:vec![("x-crux-actor".into(),"agent".into())],body:vec![]};
+            assert!(agent_mutation_forbidden(&request), "{path}");
+            let mut request = request;
+            request.method = "GET".into();
+            assert!(!agent_mutation_forbidden(&request));
+            request.method = "POST".into();request.headers.clear();
+            assert!(!agent_mutation_forbidden(&request));
+        }
+        assert!(crate::link::validate_discovery_argv(&["permission".into(),"allow".into()], false).is_err());
+        assert!(crate::link::validate_discovery_argv(&["start".into()], true).is_err());
+        assert!(crate::link::validate_discovery_argv(&["board".into()], true).is_ok());
+    }
+
     #[test]
     fn provenance_request_requires_a_path_tool_and_session() {
         let ok = parse_provenance_request(br#"{"path":"fig.svg","tool":"write","sessionId":"ses_1","callId":"call_1","content":"<svg/>"}"#).unwrap();
@@ -4274,6 +4494,47 @@ mod tests {
     /// The web composer's attachments: an upload lands at the root of the
     /// session folder under a free name, a removed chip deletes only what was
     /// uploaded, and nothing can write outside a session folder.
+    #[test]
+    fn coral_routes_are_authenticated_scoped_and_read_only() {
+        let (env, dir) = env_with_recorded_port("crux-views", None);
+        let base = dir.join("base");
+        std::fs::create_dir_all(&base).unwrap();
+        crate::runtime::set_workspace_base(&env, base.to_string_lossy().to_string()).unwrap();
+        let active = workspace_dir(&env).unwrap();
+        let run = active.join("discovery");
+        let public = run.join(".crux/public");
+        std::fs::create_dir_all(public.join("views")).unwrap();
+        for name in ["board", "tree", "archive", "radio"] {
+            std::fs::write(public.join(format!("views/{name}.json")), r#"{"nodes":[{"commit":"abc","score":9}],"marker":"public"}"#).unwrap();
+        }
+        std::fs::write(public.join("ledger_head"), r#"{"head_seq":8,"head_hmac":"abc"}"#).unwrap();
+        let state = GatewayState::default();
+        let mut p = read_persisted(&env);
+        p.enabled = true;
+        p.mode = "read-only".into();
+        write_persisted(&env, &p).unwrap();
+        let port = start_at(&env, &state, &p, None).unwrap();
+        for prefix in ["discovery", "crux", "coral"] {
+            for view in ["board", "tree", "archive", "radio", "head", "egress"] {
+                let path = format!("/v1/{prefix}/{view}?run_dir=discovery");
+                assert_eq!(call_as(port, "GET", &path, None, "").0, 401);
+                let (status, body) = call(port, "GET", &path, "");
+                assert_eq!(status, 200, "{prefix}/{view}: {body}");
+                assert_eq!(call(port, "POST", &path, "{}").0, 403);
+            }
+        }
+        let (status, body) = call(port, "GET", "/v1/discovery/tree?run_dir=discovery&commit=abc", "");
+        assert_eq!(status, 200);
+        assert_eq!(serde_json::from_str::<serde_json::Value>(&body).unwrap()["score"], 9);
+        let (status_legacy, _) = call(port, "GET", "/v1/coral/tree?coral_dir=discovery&commit=abc", "");
+        assert_eq!(status_legacy, 200);
+        assert_eq!(call(port, "GET", "/v1/discovery/board", "").0, 400);
+        assert_eq!(call(port, "GET", &format!("/v1/discovery/board?run_dir={}", enc(&dir.to_string_lossy())), "").0, 400);
+        assert!(!run.join(".provenance").exists(), "GET must not create an anchor");
+        stop(&env, &state);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
     #[test]
     #[cfg(unix)]
     fn web_uploads_land_in_the_session_folder_and_nowhere_else() {

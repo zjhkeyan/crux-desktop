@@ -1,8 +1,8 @@
 // Coding agents the machine may already have, and how to drive each one.
 //
-// Borrowed in shape from Orca (`src/shared/tui-agent-config.ts`, MIT): an agent
+// Borrowed in shape from Crux (`src/shared/tui-agent-config.ts`, MIT): an agent
 // is not an integration written per vendor, it is a COMMAND that may or may not
-// be installed, described by a row in a table. Orca runs them as TUI processes
+// be installed, described by a row in a table. Crux runs them as TUI processes
 // in a terminal; this app drives the same binaries over ACP, so a conversation
 // with them uses the app's own thread and composer (`lib/acpTransport.ts`).
 //

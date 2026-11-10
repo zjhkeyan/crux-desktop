@@ -19,33 +19,30 @@ export type Turn = {
 export type TurnSegment = { foldable: boolean; blocks: ThreadBlock[] };
 
 /**
- * What the model itself did: narration, thinking, and commands.
+ * The mechanical part of the model's work: commands and step summaries.
  *
- * Everything else in a turn is the APP speaking — a reviewer's findings, a
- * status line, a compaction notice, a table or figure it produced — and none of
- * it folds. A reviewer warning is the clearest case: the next message answers it
- * ("the sub-agent caught the swap"), so hiding it would leave the answer
- * referring to something the reader cannot see.
+ * Everything else stays on screen once the turn is done. That includes the
+ * model's own mid-turn narration (stage updates, hypotheses, interim tables
+ * printed between tool calls) and its reasoning — a long autonomous run is only
+ * trustworthy if the reader can follow how it got to the answer. It also
+ * includes the APP speaking — a reviewer's findings, a status line, a
+ * compaction notice — where the next message often answers it ("the sub-agent
+ * caught the swap"), so hiding it would leave the answer referring to
+ * something the reader cannot see.
  */
-const FOLDABLE = new Set(["tool-call", "agent", "step-summary"]);
+const FOLDABLE = new Set(["tool-call", "step-summary"]);
 
 /**
- * Thinking never enters the conversation.
+ * Drop reasoning blocks that carry no text.
  *
- * It goes by as one line beside "Working…" while it happens
- * (`SessionView`'s status row) and is not kept. In the thread it was
- * indistinguishable from what the model actually SAID — both plain black
- * paragraphs, the colour being a deliberate choice — and on a model that thinks
- * a lot it was the bulk of every fold, so the answer was buried in the
- * deliberation that produced it.
- *
- * Dropped here rather than rendered as nothing, so it cannot leave an empty
- * segment behind or make a fold out of blocks that draw nothing.
+ * Non-empty thinking is kept and rendered as a dimmed, collapsible block,
+ * visibly distinct from what the model SAID. An empty one (a reasoning part
+ * opened and never filled) would draw nothing, so it is dropped here rather
+ * than rendered as nothing — it cannot leave an empty segment behind.
  */
 export function dropReasoning(blocks: ThreadBlock[]): ThreadBlock[] {
-  return blocks.some((b) => b.kind === "reasoning")
-    ? blocks.filter((b) => b.kind !== "reasoning")
-    : blocks;
+  const isEmpty = (b: ThreadBlock) => b.kind === "reasoning" && b.text.trim().length === 0;
+  return blocks.some(isEmpty) ? blocks.filter((b) => !isEmpty(b)) : blocks;
 }
 
 /** Blocks that carry nothing of their own and must not, alone, make a fold. */
@@ -56,8 +53,8 @@ const isInvisible = (b: ThreadBlock): boolean => b.kind === "running-jobs";
  * work into foldable runs separated by whatever must stay visible.
  *
  * The answer is the LAST agent message of the turn: a model that narrates as it
- * goes writes several, and only the last is the result — the earlier ones are it
- * thinking out loud, which belongs with the work.
+ * goes writes several, and only the last is the result — the earlier ones are
+ * progress narration, which sits in the work but stays visible (not FOLDABLE).
  *
  * A turn with no agent message yet is still running, so it has no answer and
  * nothing folds: the fold exists to hide work already finished. That is also why
@@ -74,11 +71,21 @@ export function splitTurns(blocks: ThreadBlock[]): Turn[] {
     const [lead, rest] =
       current[0]?.kind === "user" ? [[current[0]], current.slice(1)] : [[], current];
     // Searched over the REST, so a user message is never mistaken for an answer
-    // and a turn that is only a question folds nothing.
+    // and a turn that is only a question folds nothing. Stop if model work
+    // (a tool call, reasoning, or step summary) appears after the last agent
+    // message: that message is mid-turn narration (e.g. a stage update), and
+    // the turn is still running.
     let answerAt = -1;
     for (let i = rest.length - 1; i >= 0; i--) {
       if (rest[i].kind === "agent") {
         answerAt = i;
+        break;
+      }
+      if (
+        rest[i].kind === "tool-call" ||
+        rest[i].kind === "reasoning" ||
+        rest[i].kind === "step-summary"
+      ) {
         break;
       }
     }

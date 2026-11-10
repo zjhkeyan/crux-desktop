@@ -34,7 +34,7 @@ pub fn ls(args: &Args) -> Result<(), String> {
         });
         println!("  {key:<26} {value:<10} {}{}", s["label"].as_str().unwrap_or(""), choices.unwrap_or_default());
     }
-    println!("\nChange with: osd settings set KEY=VALUE [KEY=VALUE…] --reason \"why\"");
+    println!("\nChange with: crux settings set KEY=VALUE [KEY=VALUE…] --reason \"why\"");
     Ok(())
 }
 
@@ -61,12 +61,12 @@ pub fn changes(pairs: &[String]) -> Result<Map<String, Value>, String> {
         out.insert(k.trim().to_string(), json!(v.trim()));
     }
     if out.is_empty() {
-        return Err("nothing to change: osd settings set KEY=VALUE [KEY=VALUE…] --reason \"why\"".into());
+        return Err("nothing to change: crux settings set KEY=VALUE [KEY=VALUE…] --reason \"why\"".into());
     }
     Ok(out)
 }
 
-/// `osd settings set KEY=VALUE… --reason R [--no-wait]`
+/// `crux settings set KEY=VALUE… --reason R [--no-wait]`
 pub fn set(args: &Args) -> Result<(), String> {
     request(args, changes(&args.positional)?)
 }
@@ -80,10 +80,10 @@ pub fn request(args: &Args, changes: Map<String, Value>) -> Result<(), String> {
     let made = client.post("/v1/settings/requests", json!({ "changes": changes, "reason": reason }))?;
     let id = made["id"].as_str().ok_or("the gateway gave no request id")?.to_string();
     if args.has("no-wait") {
-        println!("Asked the user ({id}). Their decision: osd settings status {id}");
+        println!("Asked the user ({id}). Their decision: crux settings status {id}");
         return Ok(());
     }
-    println!("Waiting for the user to decide in the Open Science window…");
+    println!("Waiting for the user to decide in the Crux window…");
     let decided = wait(args, &id)?;
     report(&decided)
 }

@@ -55,7 +55,7 @@
   },
   "page": {
     "title": "Settings",
-    "subtitle": "Everything here configures the bundled OpenCode runtime — one config, no copies."
+    "subtitle": "Everything here configures the built-in agent runtime — one config, no copies."
   },
   "runtime": {
     "title": "Network",
@@ -83,8 +83,8 @@
     "mirrorPypiPlaceholder": "https://pypi.tuna.tsinghua.edu.cn/simple",
     "mirrorPythonPlaceholder": "https://mirror.example.com/python-build-standalone",
     "mirrorHint": "Optional mirrors, used only when setting up Python tools (Jupyter, science databases) on networks where pypi.org / github.com are slow. Leave blank for defaults.",
-    "serverTitle": "OpenCode server",
-    "serverHint": "The OpenCode the app drives. The built-in one starts by itself; enter an address only to use your own opencode serve."
+    "serverTitle": "Agent runtime server",
+    "serverHint": "The agent runtime the app drives. The bundled one starts automatically; set a URL only to use your own runtime server."
   },
   "acp": {
     "add": "Add an agent",
@@ -96,7 +96,7 @@
     "commandPlaceholder": "Command (npx, gemini, …)",
     "argsLabel": "Arguments",
     "argsPlaceholder": "Arguments (-y @agentclientprotocol/codex-acp)",
-    "limits": "An ACP agent runs as a command on this computer, in the conversation’s folder, beside OpenCode. It owns its model, commands and history, so the model picker and plan mode apply to OpenCode conversations only."
+    "limits": "An ACP agent runs as a command on this computer, in the conversation’s folder, beside the built-in runtime. It owns its model, commands and history, so the model picker and plan mode apply to built-in runtime conversations only."
   },
   "updates": {
     "title": "App updates",
@@ -120,8 +120,8 @@
     "privacy": "Only the public GitHub Releases API is contacted. No workspace files or API keys are sent."
   },
   "model": {
-    "title": "OpenCode default model",
-    "hint": "The model a new OpenCode conversation starts on. The providers below supply what you can pick.",
+    "title": "Default model",
+    "hint": "The model a new conversation starts on. The providers below supply what you can pick.",
     "connectPrompt": "Connect the runtime to configure models.",
     "notSet": "Not set — pick a default model",
     "providersDivider": "Providers",
@@ -149,10 +149,10 @@
     "noProvidersHint": "Connect a provider below."
   },
   "providers": {
-    "title": "OpenCode providers",
-    "hint": "Authentication, custom endpoints, and imported OpenCode logins",
+    "title": "Model providers",
+    "hint": "API key authentication, custom endpoints, and model configuration",
     "webHint": "Connected providers — read-only from the browser",
-    "webNote": "API keys and custom endpoints are set on the machine running the workbench — in the desktop app, or with `osd auth set` when it runs headless. Credentials never cross the gateway.",
+    "webNote": "API keys and custom endpoints are set on the machine running the workbench — in the desktop app, or with `crux auth set` when it runs headless. Credentials never cross the gateway.",
     "connectPrompt": "Connect the runtime to manage providers.",
     "manage": "Manage",
     "collapse": "Collapse",
@@ -183,7 +183,7 @@
     "fetchingModels": "Fetching…",
     "noModelsFound": "No models reported by the endpoint.",
     "addEndpoint": "Add endpoint",
-    "importLogin": "Already use the OpenCode CLI? Import its login",
+    "importLogin": "Import local CLI login",
     "addTitle": "Add a provider",
     "fieldName": "Name",
     "fieldApiStyle": "API style",
@@ -341,8 +341,8 @@
     "couldNotRemoveMcp": "Could not remove the MCP server",
     "mcpRemoved": "MCP server {{name}} removed",
     "importFailed": "Import failed",
-    "noOpenCodeLoginFound": "No OpenCode CLI login found on this machine.",
-    "importedLogin": "Imported your OpenCode CLI login.",
+    "noOpenCodeLoginFound": "No local CLI login found on this machine.",
+    "importedLogin": "Imported your local CLI login.",
     "couldNotSetProxy": "Could not apply the proxy setting",
     "proxyApplied": "Proxy setting applied",
     "mirrorSaved": "Mirror settings saved",
@@ -382,7 +382,7 @@
   },
   "remoteCompute": {
     "title": "Remote compute",
-    "subtitle": "Run jobs on your own servers over SSH — CPU or GPU; Slurm optional. Uses your own SSH keys; nothing is installed on the machine.",
+    "subtitle": "Run CPU or GPU jobs on your own servers with Crux Link or SSH; Slurm optional.",
     "unavailable": "Available in the desktop app.",
     "empty": "No machines yet — add one below.",
     "hostPlaceholderWithHosts": "user@host — or pick from your ~/.ssh/config ({{count}})",
@@ -423,7 +423,12 @@
     "signedIn": "signed in",
     "signOut": "Sign out",
     "signOutTitle": "Close the shared connection to this machine",
-    "sharingUnavailable": "needs a password or code, which requires OpenSSH connection sharing (unavailable on Windows)"
+    "sharingUnavailable": "Use Crux Link for password and 2FA sign-in when OpenSSH connection sharing is unavailable.",
+    "cruxLink": {
+      "connect": "Connect with Crux Link (Wizard)",
+      "hint": "Connect from Windows, macOS or Linux. Verify the host fingerprint, pair a dedicated key and check the server before launching.",
+      "close": "Close Wizard"
+    }
   },
   "remote": {
     "title": "Remote Access",
@@ -534,18 +539,18 @@
     }
   },
   "cli": {
-    "title": "Terminal command (osd)",
+    "title": "Terminal command (crux)",
     "hint": "The workbench from a terminal — sessions, projects, files, and a headless server for a machine with no screen. Installed with the app; no setup.",
-    "readyPath": "Ready — run `osd` in a new terminal.",
-    "readyProfile": "Ready — added to {{profile}}. Run `osd` in a new terminal.",
-    "readyEnvironment": "Ready — added to your user PATH. Run `osd` in a new terminal.",
+    "readyPath": "Ready — run `crux` in a new terminal.",
+    "readyProfile": "Ready — added to {{profile}}. Run `crux` in a new terminal.",
+    "readyEnvironment": "Ready — added to your user PATH. Run `crux` in a new terminal.",
     "unreachable": "Installed, but nothing on your PATH reaches it. Add this line to your shell profile:",
     "notInstalled": "Not installed. Use the button, or restart the app.",
-    "unavailable": "This build does not carry the osd command.",
+    "unavailable": "This build does not carry the crux command.",
     "occupied": "A file this app did not write already has that name — rename it first.",
     "install": "Install command",
     "repair": "Reinstall",
-    "error": "Installing the osd command failed"
+    "error": "Installing the crux command failed"
   },
   "memory": {
     "title": "Memory",
@@ -565,15 +570,15 @@
     "disabledNote": "Memory is switched off, so this file is not loaded right now."
   },
   "agentModels": {
-    "title": "OpenCode model and effort per role",
-    "hint": "Run a reviewer or explorer role on a fast model while the main role reasons on a strong one, and set how hard each one thinks.",
+    "title": "Agent role models and reasoning effort",
+    "hint": "Configure the model and reasoning effort for each agent role, or add custom roles.",
     "noModels": "Connect a provider to choose models.",
     "followDefault": "Follow default",
     "modelFor": "Model for {{agent}}",
     "defaultEffort": "Default effort",
     "effortFor": "Reasoning effort for {{agent}}",
     "retiredOption": "{{model}} — no longer served",
-    "primaryHint": "build and plan run the messages you send. A model set here applies unless you pick one inside a conversation, which wins for that conversation only.",
+    "primaryHint": "Assign a model and reasoning effort to each agent role you talk to or dispatch; roles left on default follow the global model.",
     "group": {
       "conversation": "Roles you talk to",
       "utility": "Run by the workbench"
@@ -582,8 +587,23 @@
     "about": {
       "title": "Names a session from its first message.",
       "summary": "Writes the short recap of a conversation.",
-      "compaction": "Rewrites a long conversation to fit the context window."
-    }
+      "compaction": "Rewrites a long conversation to fit the context window.",
+      "build": "Executes tasks and uses tools according to configured permissions.",
+      "plan": "Analyzes requirements and plans the work.",
+      "general": "Researches complex questions and carries out multi-step tasks.",
+      "explore": "Explores the codebase to find files and explain how the code works.",
+      "reviewer": "Reviews scientific rigour, traceability and reproducibility without changing files.",
+      "crux-run-doctor": "Diagnoses Crux discovery runs and recommends fixes without changing the run.",
+      "crux-task-author": "Turns an optimization goal into a validated Crux discovery task.",
+      "memory-curator": "Consolidates session transcripts, experiment logs, and corpora into .openscience/memory/ and MEMORY.md."
+    },
+    "roleName": "Role name",
+    "addRole": "Add role",
+    "customRole": "Custom role",
+    "removeRole": "Remove",
+    "resetRole": "Reset",
+    "removeRoleFor": "Remove role {{agent}}",
+    "resetRoleFor": "Reset configuration for {{agent}}"
   },
   "ssh": {
     "title": "Sign in to {{host}}",
@@ -610,13 +630,13 @@
     "opened": "Opened the permission setup window.",
     "error": "Computer Use",
     "accessibility": "Accessibility",
-    "accessibilityHint": "Required. Lets the helper read an app's interface and act on it. Granted to Open Science Computer Use — a separate helper — not to the whole workbench.",
+    "accessibilityHint": "Required. Lets the helper read an app's interface and act on it. Granted to Crux Computer Use — a separate helper — not to the whole workbench.",
     "screenshots": "Screen Recording",
-    "screenshotsHint": "Optional, and granted to Open Science itself rather than to the helper — macOS attributes screen capture to the app that started the request. Only needed when the agent has to look at a window it cannot read as text, such as a plot or a canvas."
+    "screenshotsHint": "Optional, and granted to Crux itself rather than to the helper — macOS attributes screen capture to the app that started the request. Only needed when the agent has to look at a window it cannot read as text, such as a plot or a canvas."
   },
   "userBrowser": {
     "title": "A browser you installed",
-    "hint": "Open Science found a browser on this Mac that its agent can drive from the shell. Nothing to configure — this is here so you know it can be reached.",
+    "hint": "Crux found a browser on this Mac that its agent can drive from the shell. Nothing to configure — this is here so you know it can be reached.",
     "name": "ego lite",
     "reachable": "Installed and reachable. The agent will ask before the first use in a conversation.",
     "notReachable": "Installed, but its command-line tool is not on this machine, so the agent cannot reach it. Run ego lite's own setup to add it.",

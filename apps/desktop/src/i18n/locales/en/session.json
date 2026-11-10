@@ -227,26 +227,26 @@
   "starters": {
     "newSession": "New session",
     "heading": "What should we look into?",
-    "subheading": "Describe your analysis below — or start from one of these.",
-    "subheadingNoCards": "Describe your analysis below.",
+    "subheading": "Describe your computational chemistry or algorithm optimization task below — or start from one of these.",
+    "subheadingNoCards": "Describe your computational chemistry or algorithm optimization task below.",
     "demo": {
-      "title": "Run a demo analysis, end to end",
-      "description": "Simulate a dataset, fit a model, and produce a figure and a traceable report."
+      "title": "Computational Chemistry: DFT transition-state & barrier search",
+      "description": "Run saddle-point TS optimization, single imaginary frequency check, and IRC energy profile with traceable report."
     },
     "analyze": {
-      "title": "Analyze my data",
-      "description": "Point the agent at a file you added; get figures and a report back."
+      "title": "Computational Chemistry: QSAR modeling & Bayesian reaction optimization",
+      "description": "Featurize molecules, benchmark surrogate models, and propose next-batch reaction conditions via UCB/EI."
     },
     "audit": {
-      "title": "Audit a report for traceability",
-      "description": "Check citations, unsourced numbers, and figure-versus-code consistency."
+      "title": "Algorithm Optimization: CORAL multi-agent parallel search",
+      "description": "Orchestrate isolated git worktree solvers with Direction Board UCB credit and Verified Shared Archive."
     },
     "example-climate": {
-      "title": "Explore an example: climate trends",
-      "description": "Real NASA GISTEMP data — trend, decadal comparison, figure, and report."
+      "title": "Algorithm Optimization: Non-convex geometric packing & exact certification",
+      "description": "Combine multi-start basin-hopping, symmetry ansatz, and 60-digit mpmath contact-graph certification."
     },
     "error": {
-      "setup": "Could not set up the example: {{message}}"
+      "setup": "Could not set up the workflow: {{message}}"
     }
   },
   "live": {
@@ -254,7 +254,7 @@
       "bodyWeb": "Waiting for the host app to answer. Keep this page open — it connects on its own as soon as the host is reachable.",
       "title": "Starting the local runtime…",
       "body": "The bundled agent runtime is coming up. On a first launch macOS may ask for permission to access your folders — allow it and this finishes on its own.",
-      "upgrading": "Open Science is upgrading your conversation history for the new runtime ({{done}} of {{total}} conversations). This happens once."
+      "upgrading": "Crux is upgrading your conversation history for the new runtime ({{done}} of {{total}} conversations). This happens once."
     },
     "runtime": {
       "title": "OpenCode runtime",
@@ -491,7 +491,8 @@
     "sentByAgentLabel": "Sent by the agent in",
     "sentByAccountLabel": "Sent by the account",
     "clickToCopyRef": "Click to copy its reference for an agent",
-    "from": "From"
+    "from": "From",
+    "reasoning": "Reasoning"
   },
   "historyRepair": {
     "reason": {
@@ -697,5 +698,160 @@
   "reference": {
     "copy": "Copy reference for an agent",
     "copied": "Reference copied — paste it to an agent"
+  },
+  "discovery": {
+    "title": "Crux Discovery",
+    "views": "Discovery views",
+    "board": "Direction Board",
+    "tree": "Lineage Tree",
+    "archive": "Verified Shared Archive",
+    "radio": "AgentRadio Bus",
+    "refresh": "Refresh",
+    "loading": "Loading…",
+    "error": "Unable to read Crux: {{error}}",
+    "empty": "No public entries yet.",
+    "seats": "Seats wanted / claimed",
+    "yield": "Yield",
+    "potential": "UCB potential",
+    "newArm": "NEW direction arm",
+    "dormant": "Dormant directions",
+    "edges": "Solid: code lineage · Dashed: inspired-by / provenance",
+    "parent": "Parent",
+    "inspired": "Inspired by / provenance",
+    "score": "Score",
+    "constraints": "Failure constraints",
+    "scope": "Scope",
+    "ttl": "TTL",
+    "rejected": "Firewall rejected: {{count}}",
+    "stake": "Review stake",
+    "anchor": {
+      "matched": "Head matches Crux anchor",
+      "ahead": "Head advanced; verify ledger chain",
+      "unanchored": "No Crux anchor recorded",
+      "error": "Head verification failed"
+    },
+    "remote": {
+      "connectTitle": "Connect a Server",
+      "importHosts": "Import from ~/.ssh/config or VS Code Remote-SSH",
+      "savedHost": "Saved SSH Host",
+      "chooseHost": "Choose a host",
+      "noHosts": "No saved hosts found. Enter the server address below.",
+      "serverAddress": "Server Address",
+      "addressPlaceholder": "user@host:port",
+      "signInMethod": "Sign-In Method",
+      "password": "Password + 2FA",
+      "existingKey": "Existing Key",
+      "proxyJump": "ProxyJump",
+      "jumpHost": "Jump Host",
+      "serverLabel": "Server Label",
+      "connect": "Connect to Server",
+      "working": "Working…",
+      "verifyTitle": "Verify Server Fingerprint",
+      "verifyFingerprint": "First connection to {{host}}. Fingerprint: {{fingerprint}}. Compare it with the fingerprint published by your IT department before continuing.",
+      "verified": "I verified it",
+      "invalidFingerprint": "The server did not return a SHA256 fingerprint. Retry the connection.",
+      "pinnedNode": "Pinned server: {{node}}",
+      "pair": "Pair Dedicated ed25519 Key",
+      "unpair": "Unpair",
+      "pairFailed": "This server did not accept key pairing. Use interactive sign-in instead.",
+      "unpairFailed": "The server did not confirm key removal. Retry Unpair.",
+      "signInNeeded": "Complete the server sign-in prompt, then retry Connect.",
+      "connectionError": "Connection failed: {{error}}. Check the address and sign-in, then retry.",
+      "preflightTitle": "Remote Preflight",
+      "checking": "Checking the server…",
+      "retry": "Retry",
+      "preflightError": "Preflight failed: {{error}}. Check the connection and retry.",
+      "gpus": "GPUs",
+      "cpuOnly": "CPU only — no GPUs detected",
+      "gpuSummary": "{{count}}× {{name}}",
+      "scheduler": "Scheduler",
+      "noSlurm": "No Slurm scheduler",
+      "slurmMode": "Slurm Mode",
+      "evalOffload": "(a) Offload evals only (srun --jobid --overlap)",
+      "fullSwarm": "(b) Run full swarm in a Slurm job",
+      "recommended": "Recommended",
+      "loginWarning": "Agents run on the login node in this mode. Check your cluster policy.",
+      "storage": "Storage",
+      "diskFree": "{{free}} GiB free · {{path}}",
+      "relocated": "Low HOME space (< 5 GiB): use scratch automatically",
+      "runtime": "Engine & Runtime",
+      "runtimeReady": "crux-engine + agent runtime ready",
+      "runtimeUnknown": "Engine and runtime readiness not confirmed; validate before launch.",
+      "runtimeMissing": "Engine or runtime missing. Install them on the server before launch.",
+      "aiAccess": "AI Model Access",
+      "egressMode": "AI Connection",
+      "direct": "Direct (E1 — Sleep-Safe)",
+      "tunnel": "Tunnel via this PC (E2 — Auto-Pause on Sleep)",
+      "relay": "Server Relay (E3 — Sleep-Safe)",
+      "noOutbound": "No outbound HTTPS: use this PC’s tunnel or a reachable server relay.",
+      "budget": "Max Budget Cap ($ USD)",
+      "taskTitle": "Task Studio",
+      "projectFolder": "Project Folder",
+      "projectSource": "Project Location",
+      "localFolder": "Sync a local folder",
+      "remoteFolder": "Remote Linux path",
+      "chooseFolder": "Choose Folder",
+      "evaluationPreset": "Evaluation Preset",
+      "pytorch": "PyTorch / CUDA Benchmark",
+      "python": "Python pytest / Script",
+      "slurm": "Slurm srun Step",
+      "custom": "Custom Command",
+      "evalCommand": "Evaluation Command",
+      "goal": "Goal Direction",
+      "maximize": "Maximize",
+      "minimize": "Minimize",
+      "metric": "Metric Name",
+      "agents": "Agent Swarm Size",
+      "model": "Model",
+      "chooseModel": "Select or enter a model",
+      "preview": "task.yaml preview",
+      "launch": "Launch Discovery on Server",
+      "launchError": "Launch failed: {{error}}. Check the task and server connection, then retry.",
+      "launched": "Discovery launched: {{runDir}}",
+      "serverHost": "Server Host",
+      "newRun": "New Run",
+      "close": "Close",
+      "harvestTitle": "Harvest Best Result",
+      "winningCommit": "Winning commit",
+      "improvement": "Metric improvement",
+      "verifiedInsights": "Verified archive insights",
+      "noInsights": "No verified archive insights yet.",
+      "applyPatch": "Apply winning git diff to local branch crux/best-{{runId}}",
+      "checkpoints": "Include large checkpoints (*.pt, *.safetensors)",
+      "harvest": "Bring Results to This PC",
+      "harvestError": "Harvest failed: {{error}}. Check the connection and retry.",
+      "harvested": "Fetched {{count}} files. Branch: {{branch}}. Report: {{report}}.",
+      "notAvailable": "Not available",
+      "verifiedOnly": "Only a confirmed winning commit can be applied.",
+      "runRequired": "Choose a connected server before launching or harvesting.",
+      "setup": "Connect & Preflight",
+      "continue": "Continue to Task Studio"
+    },
+    "egress": {
+      "sleepSafe": "🟢 Sleep-safe: runs on server if PC closes",
+      "keepAwake": "🟡 Keep this PC awake (AI routed through this PC)",
+      "paused": "⏸ Paused — PC asleep or offline (auto-resumes on reconnect)",
+      "auth": "🔴 Paused — AI provider sign-in needed",
+      "budget": "💰 Paused — Run budget cap reached",
+      "resuming": "Reconnecting to AI provider…",
+      "unknown": "AI connection status unavailable",
+      "reconnect": "Reconnect & Sign In",
+      "raiseCap": "Raise Cap & Resume",
+      "newCap": "New Budget Cap ($ USD)",
+      "resumeError": "Could not resume: {{error}}. Check sign-in or raise the budget cap, then retry.",
+      "capTooLow": "Set a cap above the current cap and accumulated cost.",
+      "signInHint": "Reconnect the server and sign in to your AI provider, then resume.",
+      "resume": "Resume Run"
+    },
+    "telemetry": {
+      "title": "Server telemetry",
+      "pinned_node": "Server",
+      "slurm_job_id": "Slurm job",
+      "slurm_remaining": "Time left",
+      "gpu_util": "GPU",
+      "scratch_free_gb": "Scratch free (GiB)",
+      "accumulated_cost_usd": "Cost ($ USD)",
+      "link_latency_ms": "AI link (ms)"
+    }
   }
 }

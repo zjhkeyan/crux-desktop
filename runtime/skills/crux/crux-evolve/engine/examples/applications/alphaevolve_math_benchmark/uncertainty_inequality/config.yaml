@@ -1,0 +1,94 @@
+project_name: alphaevolve_uncertainty_inequality
+path_resolution: cwd
+description_en: Evolve a selectable number of Hermite coefficients to minimize the symbolic uncertainty
+  upper bound.
+description_zh: 搜索可变长度的Hermite系数向量，最小化符号验证的不确定性上界。
+random_seed: 42
+background: |
+  Minimize the preserved Hermite-polynomial uncertainty upper bound.
+  Implement find_coefficients(), returning a nonempty JSON-native list of m
+  finite coefficients c_0,...,c_(m-1), with selectable m>=1. For x and the
+  physicists' Hermite polynomials H_(4k), define
+  P0(x)=sum(c_k*H_(4k)(x),k=0..m-1). The trusted evaluator appends
+  c_m=-P0(0)/H_(4m)(0) and forms P=P0+c_m*H_(4m), so P(0)=0.
+  It flips the global sign when necessary so P is positive at positive infinity,
+  and rejects a degenerate construction. Let Q=P/x**2 and R be its largest
+  positive real root of odd multiplicity (where the sign changes).
+  Minimize c_upper_bound=R**2/(2*pi); it must be finite and strictly positive.
+  The evaluator uses exact symbolic rational coefficients and recomputes roots.
+  The free vector is not restricted to three coefficients. No
+  verify_hermite_combination() helper is supplied in the candidate workspace;
+  implement any search helpers inside the marked block. Return Python lists
+  and scalars so the separate immutable JSON wrapper can serialize the result.
+providers:
+- name: default
+  type: openai_compatible
+  base_url: ${LLM_BASE_URL}
+  api_key: ${LLM_API_KEY}
+  model: ${LLM_MODEL}
+  temperature: 1.0
+  max_tokens: 8192
+  timeout: 600.0
+coder:
+  type: custom
+  provider: default
+  temperature: 1.0
+  timeout: 600.0
+  max_retries: 2
+  max_gen_tokens: 4096
+  context_max_tokens: 8192
+  default_extension: py
+  prompt_template: Implement the experiment task exactly as specified in the problem background. Improve
+    only the EVOLVE block in solve.py. Preserve the find_coefficients() entry point and the final JSON
+    adapter.
+planner:
+  type: llm_evolution
+  provider: default
+  selection_strategy: weighted
+  parent_selection_strategy: tournament
+  build:
+    script: {}
+  samplers:
+  - name: init_sampler
+  - name: mutation_sampler
+  - name: crossover_sampler
+evaluator:
+  type: custom
+  module: uncertainty_inequality/evaluator.py:UncertaintyInequalityEvaluator
+  timeout: 1200.0
+  max_retries: 0
+  parallel: true
+  batch_size: 5
+  metrics:
+  - c_upper_bound
+  - target_ratio
+  - validity
+  - eval_time
+evolution:
+  type: island_ga
+  max_generations: 20
+  early_stop_patience: 21
+  checkpoint_interval: 5
+  elite_ratio: 0.2
+  mutation_rate: 0.3
+  crossover_rate: 0.5
+  num_islands: 3
+  island_population_size: 5
+  migration_interval: 3
+  migration_rate: 0.2
+  parallel_islands: true
+version_control:
+  enabled: true
+  type: git_worktree
+  local_path: uncertainty_inequality/algorithm
+  auto_initialize: true
+  auto_cleanup: true
+  default_branch: main
+repo_analyzer:
+  type: evolve_detector
+  include:
+  - '*.py'
+  exclude:
+  - .git/**
+  - __pycache__/**
+  - '*.pyc'

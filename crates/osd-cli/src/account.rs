@@ -32,7 +32,7 @@ pub fn run(args: &Args) -> Result<(), String> {
             println!("account {name} removed");
             Ok(())
         }
-        "" => Err("usage: osd account ls | OSD_PASSWORD=… osd account add <name> | osd account rm <name>".into()),
-        other => Err(format!("unknown command `osd account {other}`")),
+        "" => Err("usage: crux account ls | OSD_PASSWORD=… crux account add <name> | crux account rm <name>".into()),
+        other => Err(format!("unknown command `crux account {other}`")),
     }
 }

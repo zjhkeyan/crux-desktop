@@ -12,6 +12,7 @@ fn main() {
     let manifest = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
     let dist = manifest.join("../../apps/desktop/dist");
     println!("cargo:rerun-if-changed={}", dist.display());
+    println!("cargo:rerun-if-changed={}", dist.join("assets").display());
 
     let mut files = Vec::new();
     collect(&dist, &dist, &mut files);
@@ -22,6 +23,7 @@ fn main() {
          pub static ASSETS: &[(&str, &[u8])] = &[\n",
     );
     for (rel, abs) in &files {
+        println!("cargo:rerun-if-changed={abs}");
         writeln!(out, "    ({rel:?}, include_bytes!({abs:?})),").expect("write to a String");
     }
     out.push_str("];\n");

@@ -4,7 +4,7 @@
 // note on why a machine-wide figure would be someone else's number.
 import { isTauri } from "./tauri";
 
-/** One thing the user opened, and what it is costing. Orca lists a row per
+/** One thing the user opened, and what it is costing. Crux lists a row per
  *  session for the same reason: a total tells you the workbench is heavy, a row
  *  tells you which pane to go and look at. */
 export interface ResourceGroup {
@@ -44,7 +44,7 @@ export interface ListeningPort {
 }
 
 /** Keep the machine awake: always, only while an agent is working, or never.
- *  Orca's three modes (`computer-awake-mode`), for the same reason — a long
+ *  Crux's three modes (`computer-awake-mode`), for the same reason — a long
  *  agent run that the lid closes on is a wasted run. */
 export type AwakeMode = "on" | "auto" | "off";
 export const AWAKE_MODES: AwakeMode[] = ["on", "auto", "off"];
@@ -91,7 +91,7 @@ export async function holdAwake(on: boolean): Promise<void> {
   await invoke("awake_hold", { on });
 }
 
-/** `12.29 GB`, `840 MB` — two decimals in GB, as Orca's badge shows, because a
+/** `12.29 GB`, `840 MB` — two decimals in GB, as Crux's badge shows, because a
  *  workbench climbs by tens of megabytes and a single decimal hides that. */
 export function formatBytes(bytes: number): string {
   const mb = bytes / 1024 / 1024;

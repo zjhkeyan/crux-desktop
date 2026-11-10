@@ -242,7 +242,7 @@ describe("StatusBar", () => {
   });
 });
 
-describe("StatusBar · the usage popover, as Orca lays it out", () => {
+describe("StatusBar · the usage popover, as Crux lays it out", () => {
   const FIVE_HOURS = {
     usedPercent: 8,
     windowMinutes: 300,

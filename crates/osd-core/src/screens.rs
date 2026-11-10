@@ -16,6 +16,8 @@ pub enum Pane {
     /// `command` is typed into the shell when it first opens (as the app's
     /// own "run an agent" terminals do), e.g. `claude`.
     Terminal { cwd: Option<String>, command: Option<String> },
+    /// Live Crux Discovery dashboard (`Board` / `Tree` / `Archive` / `Radio`).
+    Discovery { run_dir: String },
 }
 
 /// The next free `g<n>` and `p<n>` numbers in a layout.
@@ -66,6 +68,12 @@ fn leaf(id: String, pane: &Pane) -> Value {
             }
             json!({ "kind": "leaf", "id": id, "sessionId": null, "content": content })
         }
+        Pane::Discovery { run_dir } => json!({
+            "kind": "leaf",
+            "id": id,
+            "sessionId": null,
+            "content": { "kind": "discovery", "runDir": run_dir }
+        }),
     }
 }
 

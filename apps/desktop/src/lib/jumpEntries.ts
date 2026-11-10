@@ -1,4 +1,4 @@
-// What ⌘J can jump to — Orca's worktree jump palette (MIT), in this app's
+// What ⌘J can jump to — Crux's worktree jump palette (MIT), in this app's
 // shape: Project → Screens → panes.
 //
 // Two views of one list. Before anything is typed: the active project's quick
@@ -95,6 +95,8 @@ export function jumpEntries(input: JumpInput): JumpEntry[] {
       case "notebook":
       case "editor":
         return basename(c.path);
+      case "discovery":
+        return basename(c.runDir) || "Crux Discovery";
     }
   };
 

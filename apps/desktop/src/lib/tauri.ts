@@ -1,8 +1,9 @@
 // Thin bridge to the Tauri Rust side. In a plain browser these are no-ops so the
 // app still runs in `pnpm dev`; in the packaged desktop app they invoke Rust commands.
 
-import { isGatewayWeb, gatewayGet, gatewayPost, signedInAccount } from "./webMode";
+import { isGatewayWeb, gatewayGet, gatewayPost, gatewayOrigin, gatewayToken, signedInAccount } from "./webMode";
 import type { Specialist } from "./specialists";
+import type { RemotePreflightReport, RemoteRunOptions } from "./gatewayHttp";
 
 export const isTauri =
   typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -99,6 +100,9 @@ export async function probeEndpointModels(
   apiKey: string | undefined,
   kind: "openai" | "anthropic",
 ): Promise<ProbeResult> {
+  if (isGatewayWeb) {
+    return (await gatewayPost<ProbeResult>("/v1/probe-models", { baseUrl, apiKey, kind })) ?? { baseUrl, models: [] };
+  }
   if (!isTauri) return { baseUrl, models: [] };
   const { invoke } = await import("@tauri-apps/api/core");
   return invoke<ProbeResult>("probe_endpoint_models", { baseUrl, apiKey, kind });
@@ -270,6 +274,7 @@ export async function setMemoryEnabled(enabled: boolean): Promise<void> {
 /** Per-agent model overrides, `{ agent: "provider/model" }`. Agents that are
  *  absent follow the default model. */
 export async function getAgentModels(): Promise<Record<string, string>> {
+  if (isGatewayWeb) return (await gatewayGet<Record<string, string>>("/v1/agent-models").catch(() => null)) ?? {};
   if (!isTauri) return {};
   const { invoke } = await import("@tauri-apps/api/core");
   return invoke<Record<string, string>>("get_agent_models");
@@ -278,6 +283,10 @@ export async function getAgentModels(): Promise<Record<string, string>> {
 /** Pin one agent to a model, or pass "" to clear the override. Restarts the
  *  sidecar — agents are built when it loads its config. */
 export async function setAgentModel(agent: string, model: string): Promise<void> {
+  if (isGatewayWeb) {
+    await gatewayPost("/v1/agent-models", { agent, model });
+    return;
+  }
   if (!isTauri) return;
   const { invoke } = await import("@tauri-apps/api/core");
   await invoke("set_agent_model", { agent, model });
@@ -286,6 +295,7 @@ export async function setAgentModel(agent: string, model: string): Promise<void>
 /** Per-agent reasoning-effort overrides, `{ agent: "high" }`. Agents that are
  *  absent run their model's default effort (#71). */
 export async function getAgentVariants(): Promise<Record<string, string>> {
+  if (isGatewayWeb) return (await gatewayGet<Record<string, string>>("/v1/agent-variants").catch(() => null)) ?? {};
   if (!isTauri) return {};
   const { invoke } = await import("@tauri-apps/api/core");
   return invoke<Record<string, string>>("get_agent_variants");
@@ -293,6 +303,10 @@ export async function getAgentVariants(): Promise<Record<string, string>> {
 
 /** Pin one agent to a reasoning-effort variant, or pass "" to clear it. */
 export async function setAgentVariant(agent: string, variant: string): Promise<void> {
+  if (isGatewayWeb) {
+    await gatewayPost("/v1/agent-variants", { agent, variant });
+    return;
+  }
   if (!isTauri) return;
   const { invoke } = await import("@tauri-apps/api/core");
   await invoke("set_agent_variant", { agent, variant });
@@ -543,6 +557,24 @@ export async function setMirrorSetting(pypi: string, python: string): Promise<vo
 /** Remove a provider/mcp entry from the global OpenCode config. The runtime
  *  applies the edit itself. */
 export async function removeConfigEntry(section: "provider" | "mcp", key: string): Promise<void> {
+  if (isGatewayWeb) {
+    const token = gatewayToken();
+    const res = await fetch(
+      `${gatewayOrigin()}/v1/opencode-config/${encodeURIComponent(section)}/${encodeURIComponent(key)}`,
+      {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      },
+    );
+    if (!res.ok) {
+      const detail = await res
+        .json()
+        .then((j: { error?: string }) => j.error)
+        .catch(() => null);
+      throw new Error(detail ?? `HTTP ${res.status}`);
+    }
+    return;
+  }
   if (!isTauri) throw new Error("not running in the desktop app");
   const { invoke } = await import("@tauri-apps/api/core");
   await invoke("remove_config_entry", { section, key });
@@ -1311,3 +1343,67 @@ export async function configureOpenCode(
     return { ok: false, reason: "error", message: e instanceof Error ? e.message : String(e) };
   }
 }
+
+/** Public Crux discovery projections shared by Desktop and Gateway Web. */
+export async function getDiscoveryView<T>(view: import("./gatewayHttp").DiscoveryView, runDir: string, commit?: string): Promise<T> {
+  if (isGatewayWeb) return (await import("./gatewayHttp")).getDiscoveryView<T>(view, runDir, commit);
+  if (!isTauri) throw new Error("Crux discovery host is unavailable");
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<T>(`discovery_${view}`, { runDir, commit: commit ?? null });
+}
+export const getDiscoveryBoard = <T = Record<string, unknown>>(runDir: string) => getDiscoveryView<T>("board", runDir);
+export const getDiscoveryTree = <T = Record<string, unknown>>(runDir: string, commit?: string) => getDiscoveryView<T>("tree", runDir, commit);
+export const getDiscoveryArchive = <T = Record<string, unknown>>(runDir: string) => getDiscoveryView<T>("archive", runDir);
+export const getDiscoveryRadio = <T = Record<string, unknown>>(runDir: string) => getDiscoveryView<T>("radio", runDir);
+export const getDiscoveryHead = <T = Record<string, unknown>>(runDir: string) => getDiscoveryView<T>("head", runDir);
+
+/** Remote actions share gateway authentication and the desktop approval boundary. */
+async function remoteAction<T>(command: string, path: string, args: Record<string, unknown>): Promise<T> {
+  if (isGatewayWeb) {
+    const result = await gatewayPost<T>(`/v1/remote/${path}`, args);
+    if (result === null) throw new Error("Crux remote host returned no response");
+    return result;
+  }
+  if (!isTauri) throw new Error("Crux remote host is unavailable");
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<T>(command, args);
+}
+
+export function runRemotePreflight(host: string): Promise<RemotePreflightReport> {
+  return remoteAction("run_remote_preflight", "preflight", { host });
+}
+
+export function pairRemoteHostKey(host: string): Promise<{ paired: boolean; publicKey?: string; pinnedNode?: string }> {
+  return remoteAction("pair_remote_host_key", "pair", { host });
+}
+
+export function unpairRemoteHostKey(host: string): Promise<{ unpaired: boolean }> {
+  return remoteAction("unpair_remote_host_key", "unpair", { host });
+}
+
+export function harvestRemoteRun(host: string, runDir: string, options: { applyGitPatch?: boolean; includeCheckpoints?: boolean }): Promise<{ branch?: string; reportPath?: string; filesCount: number }> {
+  return remoteAction("harvest_remote_run", "harvest", { host, runDir, options });
+}
+
+export function inspectRemoteHostKey(host: string): Promise<{ fingerprint: string; trusted: boolean }> {
+  return remoteAction("inspect_remote_host_key", "host-key", { host });
+}
+
+export function connectRemoteHost(host: string, options: { fingerprint: string; method: "password" | "key" | "proxyjump"; label?: string; jumpHost?: string }): Promise<{ connected: boolean; pinnedNode?: string; needsSignIn?: boolean }> {
+  return remoteAction("connect_remote_host", "connect", { host, options });
+}
+
+export function launchRemoteDiscovery(host: string, projectPath: string, taskYaml: string, options: RemoteRunOptions & { syncLocal: boolean }): Promise<{ runDir: string }> {
+  return remoteAction("launch_remote_discovery", "launch", { host, projectPath, taskYaml, options });
+}
+
+export function resumeRemoteDiscovery(host: string, runDir: string, maxCostUsd?: number): Promise<{ resumed: boolean }> {
+  return remoteAction("resume_remote_discovery", "resume", { host, runDir, maxCostUsd });
+}
+
+export const getCoralView = getDiscoveryView;
+export const getCoralBoard = getDiscoveryBoard;
+export const getCoralTree = getDiscoveryTree;
+export const getCoralArchive = getDiscoveryArchive;
+export const getCoralRadio = getDiscoveryRadio;
+export const getCoralHead = getDiscoveryHead;

@@ -1,5 +1,5 @@
 /**
- * Pasting copied files into a terminal pastes their paths, as Orca, iTerm2 and
+ * Pasting copied files into a terminal pastes their paths, as Crux, iTerm2 and
  * Terminal.app do. Finder and Explorer put files on the clipboard as file
  * references, which the webview hides from the page: ⌘V gave nothing. The
  * desktop shell reads them natively (`clipboard_file_paths`).

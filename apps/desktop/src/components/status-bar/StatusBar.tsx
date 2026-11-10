@@ -55,7 +55,7 @@ const CATALOG_ID: Record<string, string> = {
  *  would burn disk for a number nobody is watching that closely. */
 const REFRESH_INTERVAL_MS = 5 * 60_000;
 
-/** How often the open popover re-renders its countdowns. Orca schedules a timer
+/** How often the open popover re-renders its countdowns. Crux schedules a timer
  *  to the next label boundary; a minute tick is the same thing at a fraction of
  *  the complexity, and the labels only ever floor to minutes. */
 const COUNTDOWN_TICK_MS = 60_000;
@@ -233,7 +233,7 @@ const SESSION_ROWS = 5;
 const NEARLY_FULL = 80;
 
 /**
- * One row inside the popover, as Orca lays it out: name (· plan) on the left,
+ * One row inside the popover, as Crux lays it out: name (· plan) on the left,
  * the soonest reset on the right, and every window underneath.
  */
 function UsageRosterRow({ row, now }: { row: UsageRow; now: number }) {
@@ -295,7 +295,7 @@ function UsageRosterRow({ row, now }: { row: UsageRow; now: number }) {
  * The window's bottom strip: a 24px bar of quiet segments, each highlighting on
  * hover and opening a small popover on click.
  *
- * This is Orca's status bar (`StatusBarSurface` / `UsageRosterPanel`), not a
+ * This is Crux's status bar (`StatusBarSurface` / `UsageRosterPanel`), not a
  * panel of our own. The rule it encodes is that ambient numbers belong on ONE
  * line at the edge of the window and their detail belongs behind a click — a
  * sidebar block listing every figure at once costs permanent space for
@@ -328,7 +328,7 @@ export function StatusBar() {
   return (
     <div className="flex h-6 min-h-[24px] shrink-0 select-none items-center gap-4 border-t border-border bg-surface px-3 text-xs">
       {rows.length > 0 && <UsageSegment rows={rows} />}
-      {/* What the machine is doing, on the right — Orca's arrangement: spend on
+      {/* What the machine is doing, on the right — Crux's arrangement: spend on
           the left, the machine on the right, and nothing in between. */}
       <div className="ml-auto flex items-center gap-3">
         <AwakeSegment />
@@ -340,7 +340,7 @@ export function StatusBar() {
   );
 }
 
-/** Orca's metric shape: a short window label, a 5px bar, the number. Colour
+/** Crux's metric shape: a short window label, a 5px bar, the number. Colour
  *  appears only once the window is worth noticing. */
 function WindowMetric({ window, showBar = true }: { window: RateLimitWindow; showBar?: boolean }) {
   const { t } = useTranslation("nav");
@@ -410,7 +410,7 @@ function SessionRow({ spend }: { spend: SessionSpend }) {
 }
 
 /** Keeps every open countdown current off ONE timer, rather than a timer per
- *  window (Orca's `useResetCountdownClock`). */
+ *  window (Crux's `useResetCountdownClock`). */
 function useCountdownClock(): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {

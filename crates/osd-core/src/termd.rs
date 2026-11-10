@@ -2,7 +2,7 @@
 //
 // A PTY dies with the process holding its master side, so while the app held
 // them, every update or relaunch killed each shell and the Claude Code / Codex
-// running in it. Here, as in Orca, the PTYs live in a detached `osd termd`
+// running in it. Here, as in Crux, the PTYs live in a detached `osd termd`
 // started on first use; the app is only a client. A new app (after an update,
 // a crash, a quit) dials the same host and finds every terminal still running.
 //

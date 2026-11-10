@@ -1,7 +1,7 @@
 # Open Science Desktop Windows computer-use bridge: a small UI Automation
 # adapter. One JSON operation in, one JSON response out.
 #
-# Ported from Orca (github.com/stablyai/orca, MIT, Copyright (c) 2026 Lovecast
+# Ported from Crux (github.com/ai4s-research/open-science, MIT, Copyright (c) 2026 Lovecast
 # Inc.) -- its accessibility-first computer-use design is the one this follows.
 param(
     [Parameter(Position = 0)]

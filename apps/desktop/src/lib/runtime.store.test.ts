@@ -731,6 +731,41 @@ describe("per-session workspace folders", () => {
     expect(state.threads["draft:leaf-9"]).toBeUndefined();
   });
 
+  it.each([
+    "Session not found: ses_deleted",
+    "Location not found: /root/Documents/OpenScience",
+  ])("recovers transparently from 404: %s", async (missing) => {
+    mocks.sendPromptSpy.mockImplementationOnce((sid: string) => {
+      if (sid === "ses_deleted") {
+        throw new Error(`Failed to send prompt (404: ${missing})`);
+      }
+    });
+    const id = await useRuntimeStore.getState().sendPrompt("hello after reset", "ses_deleted", "draft:leaf-1");
+    expect(id).toBe("ses_new");
+    expect(mocks.createSessionSpy).toHaveBeenCalledTimes(1);
+    expect(mocks.sendPromptSpy).toHaveBeenLastCalledWith("ses_new", "hello after reset", undefined);
+    const state = useRuntimeStore.getState();
+    expect(state.threads["ses_deleted"]).toBeUndefined();
+    expect(state.threads["ses_new"]?.blocks).toEqual([{ kind: "user", text: "hello after reset" }]);
+  });
+
+  it.each([
+    ["/root/Documents/ScienceCowork", "/root/Documents/OpenScience", "/root/Documents/ScienceCowork"],
+    ["/root/Documents/ScienceCowork/sessions/new", "/root/Documents/OpenScience/projects/old", "/root/Documents/ScienceCowork/projects/old"],
+    ["/root/Documents/ScienceCowork", "/root/Documents/OpenScience-other", "/root/Documents/OpenScience-other"],
+    ["/root/Documents/ScienceCowork-other", "/root/Documents/OpenScience", "/root/Documents/OpenScience"],
+    ["/other/Documents/ScienceCowork", "/root/Documents/OpenScience", "/root/Documents/OpenScience"],
+    ["C:\\Users\\me\\Documents\\ScienceCowork", "C:\\Users\\me\\Documents\\OpenScience\\project", "C:/Users/me/Documents/ScienceCowork/project"],
+  ])("migrates session and draft paths only within the current workspace: %s, %s", async (workspace, old, expected) => {
+    mocks.activeWorkspace = workspace;
+    mocks.sessionList = [{ id: "ses_old", title: "Existing", directory: old }];
+    useRuntimeStore.setState({ workspace, draftWorkspaces: { [DRAFT_KEY]: old } });
+    await useRuntimeStore.getState().refreshSessions();
+    expect(useRuntimeStore.getState().sessions[0].directory).toBe(expected);
+    await useRuntimeStore.getState().sendPrompt("hello");
+    expect(useRuntimeStore.getState().workspace).toBe(expected);
+  });
+
   // "+ new session in project X" opens its own pane, and that pane's composer
   // sends under `draft:<leafId>` — so the project folder must be aimed at THAT
   // slot, not the global one, or the send finds nothing and dates a folder.

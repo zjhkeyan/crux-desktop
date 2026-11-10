@@ -19,8 +19,8 @@ fn git_lock() -> &'static Mutex<()> {
     LOCK.get_or_init(|| Mutex::new(()))
 }
 
-const AUTHOR_NAME: &str = "Open Science Desktop";
-const AUTHOR_EMAIL: &str = "open-science-desktop@local";
+const AUTHOR_NAME: &str = "Crux Desktop";
+const AUTHOR_EMAIL: &str = "crux-desktop@local";
 
 /// Snapshots commit to dedicated refs OUTSIDE `refs/heads/*`, never to any
 /// branch — one chain PER user branch, keyed as `<prefix>/<branch>` (following
@@ -70,7 +70,7 @@ const MAX_DIR_BYTES: u64 = 50 * 1024 * 1024;
 /// ignored; anything genuinely too big is caught by the >= 100 MB size guard,
 /// which is format-agnostic (a small `.mp4` is kept, a huge `.csv` is not).
 const DEFAULT_GITIGNORE: &str = "\
-# Managed by Open Science Desktop.
+# Managed by Crux Desktop.
 # Excludes paths with no provenance value plus secrets that must never be
 # committed. Research outputs, data, notebooks, and code are intentionally kept;
 # files >= 100 MB are dropped by the snapshot size guard, not by this list.

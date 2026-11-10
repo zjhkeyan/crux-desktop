@@ -29,7 +29,7 @@ export async function notifyPermissionRequest(input: PermissionNotificationInput
 
   try {
     sendNotification({
-      title: "Open Science needs your approval",
+      title: "Crux needs your approval",
       body: permissionBody(input),
     });
     return true;

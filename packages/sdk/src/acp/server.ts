@@ -27,8 +27,8 @@ import type {
 import { ACP_PROTOCOL_VERSION, JsonRpcPeer, type JsonRpcTransport } from "./protocol";
 
 /** What we call ourselves in `initialize`. */
-const AGENT_NAME = "open-science";
-const AGENT_TITLE = "Open Science";
+const AGENT_NAME = "crux";
+const AGENT_TITLE = "Crux";
 
 /** ACP's `auth_required`; unused here (the gateway token is the auth) but kept
  *  next to the codes we do answer with. */

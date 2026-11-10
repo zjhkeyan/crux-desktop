@@ -14,8 +14,8 @@ vi.mock("@/lib/tauri", () => ({
 }));
 
 const status = (over: Partial<CliShimStatus> = {}): CliShimStatus => ({
-  binary: "/Applications/Open Science.app/Contents/MacOS/osd",
-  shim: "/Users/x/bin/osd",
+  binary: "/Applications/Crux.app/Contents/MacOS/crux",
+  shim: "/Users/x/bin/crux",
   installed: true,
   occupied: false,
   route: "already-on-path",
@@ -32,8 +32,8 @@ beforeEach(() => {
 describe("Settings → the terminal command", () => {
   it("reports a command the launch already installed, with nothing left to do", async () => {
     render(<TerminalCliCard />);
-    await waitFor(() => expect(screen.getByText("/Users/x/bin/osd")).toBeInTheDocument());
-    expect(screen.getByText(/Ready — run `osd` in a new terminal/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("/Users/x/bin/crux")).toBeInTheDocument());
+    expect(screen.getByText(/Ready — run `crux` in a new terminal/)).toBeInTheDocument();
     // Nothing to paste: PATH already reaches it.
     expect(screen.queryByText(/export PATH=/)).not.toBeInTheDocument();
     // The button is repair, not setup.
@@ -71,7 +71,7 @@ describe("Settings → the terminal command", () => {
     await user.click(screen.getByRole("button", { name: "Install command" }));
     expect(install).toHaveBeenCalledOnce();
     await waitFor(() =>
-      expect(screen.getByText(/Ready — run `osd` in a new terminal/)).toBeInTheDocument(),
+      expect(screen.getByText(/Ready — run `crux` in a new terminal/)).toBeInTheDocument(),
     );
   });
 
@@ -85,11 +85,11 @@ describe("Settings → the terminal command", () => {
     expect(screen.getByRole("button", { name: "Install command" })).toBeDisabled();
   });
 
-  it("says so plainly when the build carries no osd, instead of offering a broken button", async () => {
+  it("says so plainly when the build carries no crux, instead of offering a broken button", async () => {
     state.current = status({ binary: null, installed: false });
     render(<TerminalCliCard />);
     await waitFor(() =>
-      expect(screen.getByText("This build does not carry the osd command.")).toBeInTheDocument(),
+      expect(screen.getByText("This build does not carry the crux command.")).toBeInTheDocument(),
     );
     expect(screen.getByRole("button", { name: "Install command" })).toBeDisabled();
   });

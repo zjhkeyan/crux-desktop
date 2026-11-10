@@ -1,12 +1,12 @@
 [package]
 name = "osd-cli"
-description = "osd — Open Science Desktop without a window: a headless server and a client for it."
+description = "crux — Crux Desktop without a window: a headless server and a client for it."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [[bin]]
-name = "osd"
+name = "crux"
 path = "src/main.rs"
 
 [dependencies]

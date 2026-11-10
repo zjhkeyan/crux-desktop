@@ -22,44 +22,48 @@ describe("WorkflowStarters", () => {
     failInstall = false;
   });
 
-  it("renders one card per starter workflow, including the climate example", () => {
+  it("renders one card per computational chemistry and algorithm optimization starter workflow", () => {
     render(<WorkflowStarters onPick={() => {}} />);
-    // Titles are i18n-translated (session:starters.<id>.title); WORKFLOW_STARTERS
-    // itself no longer carries display copy, only ids/prompts — assert the
-    // rendered English text directly.
-    expect(screen.getByText("Run a demo analysis, end to end")).toBeInTheDocument();
-    expect(screen.getByText("Analyze my data")).toBeInTheDocument();
-    expect(screen.getByText("Audit a report for traceability")).toBeInTheDocument();
-    expect(screen.getByText("Explore an example: climate trends")).toBeInTheDocument();
-    expect(WORKFLOW_STARTERS).toHaveLength(4);
+    expect(screen.getByText("Computational Chemistry: DFT transition-state & barrier search")).toBeInTheDocument();
+    expect(screen.getByText("Computational Chemistry: QSAR modeling & Bayesian reaction optimization")).toBeInTheDocument();
+    expect(screen.getByText("Algorithm Optimization: Non-convex geometric packing & exact certification")).toBeInTheDocument();
+    expect(WORKFLOW_STARTERS).toHaveLength(3);
   });
 
   it("sends the full-workflow prompt on click", async () => {
     const onPick = vi.fn();
     render(<WorkflowStarters onPick={onPick} />);
-    await userEvent.click(screen.getByText("Run a demo analysis, end to end"));
-    await waitFor(() => expect(onPick).toHaveBeenCalledWith(expect.stringContaining("figure1.png")));
-    expect(onPick.mock.calls[0][0]).toContain("report.md");
+    await userEvent.click(screen.getByText("Computational Chemistry: DFT transition-state & barrier search"));
+    await waitFor(() => expect(onPick).toHaveBeenCalledWith(expect.stringContaining("ts_analysis/figure1.png")));
+    expect(onPick.mock.calls[0][0]).toContain("ts_analysis/report.md");
     expect(installCalls).toHaveLength(0);
   });
 
-  it("installs the example files before sending the climate prompt", async () => {
+  it("sends the geometric packing optimization prompt on click", async () => {
     const onPick = vi.fn();
     render(<WorkflowStarters onPick={onPick} />);
 
-    await userEvent.click(screen.getByText("Explore an example: climate trends"));
+    await userEvent.click(screen.getByText("Algorithm Optimization: Non-convex geometric packing & exact certification"));
     await waitFor(() => expect(onPick).toHaveBeenCalledTimes(1));
-    expect(installCalls).toEqual(["climate-trends"]);
-    expect(onPick.mock.calls[0][0]).toContain("gistemp_global_means.csv");
+    expect(onPick.mock.calls[0][0]).toContain("work/pack26");
+    expect(onPick.mock.calls[0][0]).toContain("work/thomson15");
   });
 
-  it("does not send the prompt when the example install fails", async () => {
-    failInstall = true;
-    const onPick = vi.fn();
-    render(<WorkflowStarters onPick={onPick} />);
+  it("does not send the prompt when a starter prepare hook fails", async () => {
+    const origPrepare = WORKFLOW_STARTERS[2].prepare;
+    WORKFLOW_STARTERS[2].prepare = async () => {
+      installCalls.push("pack26");
+      throw new Error("resource missing");
+    };
+    try {
+      const onPick = vi.fn();
+      render(<WorkflowStarters onPick={onPick} />);
 
-    await userEvent.click(screen.getByText("Explore an example: climate trends"));
-    await waitFor(() => expect(installCalls).toHaveLength(1));
-    expect(onPick).not.toHaveBeenCalled();
+      await userEvent.click(screen.getByText("Algorithm Optimization: Non-convex geometric packing & exact certification"));
+      await waitFor(() => expect(installCalls).toHaveLength(1));
+      expect(onPick).not.toHaveBeenCalled();
+    } finally {
+      WORKFLOW_STARTERS[2].prepare = origPrepare;
+    }
   });
 });

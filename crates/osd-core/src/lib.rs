@@ -1,4 +1,4 @@
-// Open Science Desktop — the server core.
+// Crux Desktop — the server core.
 //
 // Everything here runs with or without a window: workspace layout, the bundled
 // OpenCode sidecar, the opencode profile and config, projects, run provenance,
@@ -14,14 +14,21 @@ pub mod agent_keys;
 pub mod artifact_file;
 pub mod audit;
 pub mod browser_mcp_proxy;
+pub mod crux_bridge;
+pub use crux_bridge as coral_bridge;
+pub mod crux_views;
+pub use crux_views as coral_views;
 pub mod debug_log;
 pub mod env;
+pub mod egress_broker;
+pub mod remote_hosts;
 pub mod examples;
 pub mod gateway;
 pub mod git_snapshot;
 pub mod harness;
 pub mod history_backup;
 mod ledger;
+pub mod link;
 pub mod model_catalog;
 pub mod model_prices;
 pub mod model_probe;

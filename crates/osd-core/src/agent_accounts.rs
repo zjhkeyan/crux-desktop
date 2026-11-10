@@ -3,13 +3,13 @@
 //! Each account is a config folder of its own, the folder the agent reads its
 //! login from (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`). Signing in once in that folder
 //! and starting the agent with it set is running as that account. This is what
-//! Orca does (`src/main/claude-accounts`, MIT) and what magpie does for its
+//! Crux does (`src/main/claude-accounts`, MIT) and what magpie does for its
 //! subscription accounts; the agent's own default folder (`~/.claude`,
 //! `~/.codex`) stays the default account and is never changed.
 //!
 //! What the folders share with the default one is an ALLOWLIST: conversation
 //! history, skills, commands, plugins and instructions. Everything else stays
-//! in the account's folder. Orca shares by blocklist instead; with a blocklist a
+//! in the account's folder. Crux shares by blocklist instead; with a blocklist a
 //! file a future version adds to hold credentials would be shared by default,
 //! and the second account would quietly run as the first. A missing shared item
 //! is visible; a crossed account is not.
@@ -272,7 +272,7 @@ fn prepare_from(kind: AgentKind, default: &Path, home: &Path) -> Result<(), Stri
         }
     }
     // Claude Code's own instructions: an import of the default's file rather
-    // than a link, as Orca does, so Claude Code saving its memory file cannot
+    // than a link, as Crux does, so Claude Code saving its memory file cannot
     // break the connection.
     if kind == AgentKind::Claude {
         let own = home.join("CLAUDE.md");
@@ -344,7 +344,7 @@ pub fn launch_env(kind: AgentKind, home: &Path) -> LaunchEnv {
 
 /// Claude Code's macOS keychain entry for a config folder: "Claude
 /// Code-credentials" plus the first 8 hex digits of the folder path's SHA-256
-/// (Claude Code 2.1+, the naming Orca's keychain.ts matches).
+/// (Claude Code 2.1+, the naming Crux's keychain.ts matches).
 pub fn claude_keychain_service(home: &Path) -> String {
     let digest = Sha256::digest(home.display().to_string().as_bytes());
     let hex: String = digest.iter().take(4).map(|b| format!("{b:02x}")).collect();

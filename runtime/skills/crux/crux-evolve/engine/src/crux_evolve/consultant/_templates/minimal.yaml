@@ -1,0 +1,42 @@
+# Crux Evolve Minimal Configuration Template
+# Contains only fields that require user input to run a pipeline.
+# All other fields use sensible defaults.
+
+# Project name
+project_name: "my-algorithm-design"
+
+# LLM providers (at least one required)
+# Provider definitions can also come from global settings (~/.crux_evolve/settings.yaml)
+providers:
+  - name: "default"
+    type: "openai_compatible"   # openai | anthropic | openai_compatible | mock
+    api_key: ""                 # API key for authentication
+    model: ""                   # Model to use
+
+# Evaluator configuration (type: "custom")
+evaluator:
+  type: "custom"
+  # Module path for custom evaluator (format: module.path:ClassName)
+  module: ""
+  # Metrics to compute
+  metrics: []
+  dataset:
+    mode: "directory"           # files | directory | glob
+    path: ""                    # Directory path
+
+# Evolution configuration (type: "dyca")
+evolution:
+
+# Planner configuration
+planner:
+  provider: "default"              # Name of the LLM provider to use for planning
+
+# Coder configuration
+coder:
+  provider: "default"              # Name of the LLM provider to use for coding
+
+# Version control configuration
+version_control:
+  local_path: ""                # Path to local code repository on disk
+  remote_url: ""                # URL of remote repository (e.g., GitHub)
+  revision: ""                  # Specific revision or branch to use (e.g., "main" or "commit hash")

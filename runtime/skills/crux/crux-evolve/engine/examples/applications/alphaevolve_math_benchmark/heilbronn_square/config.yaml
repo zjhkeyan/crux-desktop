@@ -1,0 +1,93 @@
+project_name: alphaevolve_heilbronn_square_n13
+path_resolution: cwd
+description_en: Evolve 13 points to maximize minimum triangle area divided by convex-hull area.
+description_zh: 搜索13个点，最大化最小三角形面积与凸包面积之比。
+random_seed: 42
+background: |
+  Maximize the convex-hull-normalized Heilbronn objective for 13 points.
+  The legacy directory name heilbronn_square is retained for compatibility.
+  This task represents a variable convex region scaled to unit area, rather
+  than the absolute-area problem in a fixed square. Store the 13 finite points
+  inside [0,1] x [0,1] as a coordinate convention. Let T be the smallest ordinary
+  triangle area over all triples, and H the area of their convex hull.
+  Maximize best_area_ratio=T/H. Translation and uniform scaling of a valid
+  construction do not improve this ratio. All points must be separated by at
+  least 1e-6, every triple must have area at least 1e-10, and H must be positive.
+  Implement find_best_placement(n), with n=13, returning (points,minimum_area).
+  points must be convertible to a finite (13,2) array; minimum_area is the
+  ordinary unnormalized area. The fixed run_search_point(n=13) wrapper computes
+  the reported minimum and ratio independently and serializes them. Do not
+  redefine that wrapper or change anything outside the evolvable block.
+  Closed-square coordinate bounds allow absolute roundoff of 1e-12. The stated point-separation and triangle-area requirements remain unchanged.
+providers:
+- name: default
+  type: openai_compatible
+  base_url: ${LLM_BASE_URL}
+  api_key: ${LLM_API_KEY}
+  model: ${LLM_MODEL}
+  temperature: 1.0
+  max_tokens: 8192
+  timeout: 600.0
+coder:
+  type: custom
+  provider: default
+  temperature: 1.0
+  timeout: 600.0
+  max_retries: 2
+  max_gen_tokens: 4096
+  context_max_tokens: 8192
+  default_extension: py
+  prompt_template: Implement the experiment task exactly as specified in the problem background. Improve
+    only find_best_placement(n) inside the EVOLVE block in solve.py. The fixed run_search_point(n=13)
+    wrapper recomputes and serializes the result; do not redefine or call it from the EVOLVE block.
+planner:
+  type: llm_evolution
+  provider: default
+  selection_strategy: weighted
+  parent_selection_strategy: tournament
+  build:
+    script: {}
+  samplers:
+  - name: init_sampler
+  - name: mutation_sampler
+  - name: crossover_sampler
+evaluator:
+  type: custom
+  module: heilbronn_square/evaluator.py:HeilbronnSquareEvaluator
+  timeout: 1200.0
+  max_retries: 0
+  parallel: true
+  batch_size: 5
+  metrics:
+  - best_area_ratio
+  - target_ratio
+  - validity
+  - eval_time
+evolution:
+  type: island_ga
+  max_generations: 20
+  early_stop_patience: 21
+  checkpoint_interval: 5
+  elite_ratio: 0.2
+  mutation_rate: 0.3
+  crossover_rate: 0.5
+  num_islands: 3
+  island_population_size: 5
+  migration_interval: 3
+  migration_rate: 0.2
+  parallel_islands: true
+version_control:
+  enabled: true
+  type: git_worktree
+  local_path: heilbronn_square/algorithm
+  auto_initialize: true
+  auto_cleanup: true
+  default_branch: main
+repo_analyzer:
+  type: evolve_detector
+  include:
+  - '*.py'
+  exclude:
+  - .git/**
+  - __pycache__/**
+  - '*.pyc'

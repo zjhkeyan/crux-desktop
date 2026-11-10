@@ -1252,12 +1252,28 @@ export interface QueuedPrompt {
   attachments?: string[];
 }
 let queueSeq = 0;
+function isMissingSessionError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /\b404\b.*(?:Session|Location) not found/i.test(msg);
+}
+
+function migrateWorkspacePath(path: string | null | undefined, currentWorkspace?: string | null): string | undefined {
+  const prefix = currentWorkspace?.replace(/\\/g, "/").match(/^(.*\/Documents\/)ScienceCowork(?:\/|$)/)?.[1];
+  if (!path || !prefix) return path ?? undefined;
+  const normalized = path.replace(/\\/g, "/");
+  const legacy = `${prefix}OpenScience`;
+  return normalized === legacy || normalized.startsWith(`${legacy}/`)
+    ? `${prefix}ScienceCowork${normalized.slice(legacy.length)}`
+    : path;
+}
+
 /** One bounded retry for the first POSTs after a sidecar restart — the old
  *  connection occasionally dies mid-handshake ("Load failed"). */
 async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
-  } catch {
+  } catch (err) {
+    if (isMissingSessionError(err)) throw err;
     await sleep(600);
     return await fn();
   }
@@ -1959,7 +1975,9 @@ async function createFromDraftOnce(set: StoreSet, get: StoreGet, draftSrc: strin
   // carries that folder; one that does not gets its own fresh dated folder
   // (~/Documents/OpenScience/sessions/<date-time>) so its files never pile
   // up in the bare base folder.
-  const chosen = isTauri ? get().draftWorkspaces[draftSrc] : undefined;
+  const chosen = isTauri
+    ? migrateWorkspacePath(get().draftWorkspaces[draftSrc], get().workspace)
+    : undefined;
   if (isTauri) {
     set({ switching: true });
     // The folder this session is MEANT to be created in. Both calls below
@@ -2189,27 +2207,30 @@ async function performTurn(
       id = await createFromDraft(set, get, draftSrc, echo);
       lockKey = id;
     }
-    const sid = id;
-    interruptedSessions.delete(sid); // a fresh turn folds its events normally
-    erroredSessions.delete(sid); // …and its outcome label starts clean
-    notifiedSettledSessions.delete(sid); // …and its notification may fire again
-    // …and any stall warning THIS session was carrying is stale (a fresh turn).
-    // Scoped to the session: a concurrent session's loop is still its own trip.
-    for (const k of [...stallWarnedKeys]) {
-      if (k.startsWith(`${sid}:`)) stallWarnedKeys.delete(k);
-    }
-    void logDebug(`turn → ${sid}`);
-    // Stall guard: a fresh turn starts a fresh ledger (Channel A's silence
-    // clock, Channel B's counter). Base the clock here — a turn that produces
-    // nothing from the moment it was sent is the case Channel A exists for.
-    stallTurnStarted(sid, Date.now());
-    // A fresh turn restarts step counting (the SDK resets its own counter on idle).
-    if (get().stepCounts[sid])
-      set((s) => {
-        const stepCounts = { ...s.stepCounts };
-        delete stepCounts[sid];
-        return { stepCounts };
-      });
+    let sid = id;
+    const prepTurn = (targetSid: string) => {
+      interruptedSessions.delete(targetSid); // a fresh turn folds its events normally
+      erroredSessions.delete(targetSid); // …and its outcome label starts clean
+      notifiedSettledSessions.delete(targetSid); // …and its notification may fire again
+      // …and any stall warning THIS session was carrying is stale (a fresh turn).
+      // Scoped to the session: a concurrent session's loop is still its own trip.
+      for (const k of [...stallWarnedKeys]) {
+        if (k.startsWith(`${targetSid}:`)) stallWarnedKeys.delete(k);
+      }
+      void logDebug(`turn → ${targetSid}`);
+      // Stall guard: a fresh turn starts a fresh ledger (Channel A's silence
+      // clock, Channel B's counter). Base the clock here — a turn that produces
+      // nothing from the moment it was sent is the case Channel A exists for.
+      stallTurnStarted(targetSid, Date.now());
+      // A fresh turn restarts step counting (the SDK resets its own counter on idle).
+      if (get().stepCounts[targetSid])
+        set((s) => {
+          const stepCounts = { ...s.stepCounts };
+          delete stepCounts[targetSid];
+          return { stepCounts };
+        });
+    };
+    prepTurn(sid);
     if (syncTurn) {
       set((s) => ({
         runningSessions: { ...s.runningSessions, [sid]: true },
@@ -2240,7 +2261,30 @@ async function performTurn(
           delete shellTurns[sid];
           return { runningSessions, shellTurns };
         });
-        throw err;
+        if (sid === echoKey && !get().acpSessions[sid] && isMissingSessionError(err)) {
+          void logDebug(`stale session ${sid} missing on server (404); recreating session`);
+          sid = await createFromDraft(set, get, echoKey, echo);
+          lockKey = sid;
+          prepTurn(sid);
+          set((s) => ({
+            runningSessions: { ...s.runningSessions, [sid]: true },
+            ...(shell ? { shellTurns: { ...s.shellTurns, [sid]: true as const } } : {}),
+          }));
+          try {
+            await post(sid);
+          } catch (retryErr) {
+            set((s) => {
+              const runningSessions = { ...s.runningSessions };
+              const shellTurns = { ...s.shellTurns };
+              delete runningSessions[sid];
+              delete shellTurns[sid];
+              return { runningSessions, shellTurns };
+            });
+            throw retryErr;
+          }
+        } else {
+          throw err;
+        }
       }
       set((s) => {
         const runningSessions = { ...s.runningSessions };
@@ -2255,7 +2299,19 @@ async function performTurn(
       // first token points at model/provider or server turn processing.
       const t0 = performance.now();
       void logDebug(`send POST → ${sid} (streams=${streamClients.size})`);
-      await post(sid);
+      try {
+        await post(sid);
+      } catch (err) {
+        if (sid === echoKey && !get().acpSessions[sid] && isMissingSessionError(err)) {
+          void logDebug(`stale session ${sid} missing on server (404); recreating session`);
+          sid = await createFromDraft(set, get, echoKey, echo);
+          lockKey = sid;
+          prepTurn(sid);
+          await post(sid);
+        } else {
+          throw err;
+        }
+      }
       void logDebug(`send POST ok ${sid} ${Math.round(performance.now() - t0)}ms`);
       turnPostAt.set(sid, performance.now());
       set((s) => ({ runningSessions: { ...s.runningSessions, [sid]: true } }));
@@ -2291,8 +2347,10 @@ async function performTurn(
       };
     });
     // The return value keeps its original meaning: null when the session was
-    // never created (the caller treats that as "nothing to switch to").
-    return target ?? get().currentId;
+    // never created (the caller treats that as "nothing to switch to"), or the
+    // newly created session id if a draft or stale-session recovery grafted the
+    // thread before the POST failed.
+    return lockKey !== echoKey ? lockKey : (target ?? get().currentId);
   } finally {
     // Clear the lock under its CURRENT key (`lockKey` follows the draft→session
     // graft, so this never leaks a stale DRAFT_KEY lock).
@@ -4468,7 +4526,11 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
         // path for parent links after a reload (no live task event to learn from).
         const sessionParents = { ...s.sessionParents };
         for (const m of listed) if (m.parentId) sessionParents[m.id] = m.parentId;
-        return { sessions: [...listed, ...acpSessionRows(s.acpSessions)], sessionParents };
+        const sessions = [...listed, ...acpSessionRows(s.acpSessions)].map((session) => ({
+          ...session,
+          directory: migrateWorkspacePath(session.directory, s.webWorkspace ?? s.workspace),
+        }));
+        return { sessions, sessionParents };
       });
     } catch {
       /* ignore transient list failures */
@@ -5520,14 +5582,14 @@ export function todosFromInput(input: unknown): TodoItem[] | null {
 /** Pure reducer: fold one normalized OpenCode event into a thread's blocks. */
 /**
  * Tidy a tool-call title for the conversation: show workspace files by their
- * relative path (`demo/analyze.py`), not the full `/Users/.../OpenScience/...`
+ * relative path (`demo/analyze.py`), not the full `~/Documents/ScienceCowork/...`
  * absolute path, so the thread reads like a researcher's log, not a shell trace.
  * The workspace path never contains spaces (by design), so a space-free run
- * ending in `OpenScience/` matches it whether or not it has a leading slash
+ * ending in `ScienceCowork/` (or a legacy workspace name) matches it whether or not it has a leading slash
  * (OpenCode's write-tool titles drop it).
  */
 export function tidyToolTitle(title: string): string {
-  return title.replace(/[^\s]*OpenScience\//g, "").trim() || title;
+  return title.replace(/[^\s]*(?:Crux|ScienceCowork|OpenScience)\//g, "").trim() || title;
 }
 
 /**

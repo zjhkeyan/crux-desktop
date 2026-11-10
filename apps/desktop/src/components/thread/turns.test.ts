@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ThreadBlock } from "@ai4s/shared";
-import { isTurnDone, spanMs, splitTurns } from "./turns";
+import { dropReasoning, isTurnDone, spanMs, splitTurns } from "./turns";
 
 const user = (text: string) => ({ kind: "user", text }) as ThreadBlock;
 const agent = (markdown: string, t?: { created?: number; completed?: number }) =>
@@ -32,6 +32,10 @@ describe("splitTurns", () => {
     const [turn] = splitTurns([user("go"), think("let me look"), ran("ls")]);
     expect(turn.answer).toHaveLength(0);
     expect(isTurnDone(turn)).toBe(false);
+    // Mid-turn narration followed by a tool call is still running, not answered.
+    const [midTurn] = splitTurns([user("go"), ran("a"), agent("📍 Stage 1/3"), ran("b")]);
+    expect(midTurn.answer).toHaveLength(0);
+    expect(isTurnDone(midTurn)).toBe(false);
   });
 
   it("never folds a question that has no work behind it", () => {
@@ -99,5 +103,28 @@ describe("what must stay visible", () => {
   it("does not fold a turn whose only work is a notice", () => {
     const [turn] = splitTurns([user("go"), reviewer(), agent("done")]);
     expect(isTurnDone(turn)).toBe(false);
+  });
+
+  it("keeps mid-turn narration and reasoning out of the fold; only commands fold", () => {
+    // A long autonomous run is only trustworthy if the reader can follow it:
+    // stage updates and thinking between tool calls stay on screen.
+    const [turn] = splitTurns(
+      dropReasoning([
+        user("go"),
+        think("compare the two kernels"),
+        ran("a"),
+        agent("📍 Stage 1/3 · baseline 12 ms"),
+        think("   "),
+        ran("b"),
+        agent("Done."),
+      ]),
+    );
+    expect(turn.segments.map((s) => [s.foldable, s.blocks.map((b) => b.kind)])).toEqual([
+      [false, ["reasoning"]],
+      [true, ["tool-call"]],
+      [false, ["agent"]],
+      [true, ["tool-call"]],
+    ]);
+    expect(isTurnDone(turn)).toBe(true);
   });
 });

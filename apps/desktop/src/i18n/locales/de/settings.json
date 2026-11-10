@@ -55,7 +55,7 @@
   },
   "page": {
     "title": "Einstellungen",
-    "subtitle": "Hier wird ausschließlich die gebündelte OpenCode-Runtime konfiguriert — eine Konfiguration, keine Kopien."
+    "subtitle": "Alle Einstellungen hier konfigurieren die integrierte Agentenlaufzeit — eine Konfiguration, keine Kopien."
   },
   "runtime": {
     "title": "Netzwerk",
@@ -83,8 +83,8 @@
     "mirrorPypiPlaceholder": "https://pypi.tuna.tsinghua.edu.cn/simple",
     "mirrorPythonPlaceholder": "https://mirror.example.com/python-build-standalone",
     "mirrorHint": "Optionale Spiegelserver, nur beim Einrichten von Python-Tools (Jupyter, Wissenschaftsdatenbanken) in Netzwerken verwendet, in denen pypi.org / github.com langsam sind. Leer lassen für Standardwerte.",
-    "serverTitle": "OpenCode-Server",
-    "serverHint": "Das OpenCode, das die App steuert. Das integrierte startet von selbst; eine Adresse nur eintragen, um ein eigenes opencode serve zu nutzen."
+    "serverTitle": "Agent-Runtime-Server",
+    "serverHint": "Die von der App gesteuerte Agentenlaufzeit. Die mitgelieferte startet automatisch; geben Sie nur dann eine URL an, wenn Sie einen eigenen Runtime-Server verwenden möchten."
   },
   "acp": {
     "add": "Agenten hinzufügen",
@@ -96,7 +96,7 @@
     "commandPlaceholder": "Befehl (npx, gemini, …)",
     "argsLabel": "Argumente",
     "argsPlaceholder": "Argumente (-y @agentclientprotocol/codex-acp)",
-    "limits": "Ein ACP-Agent läuft als Befehl auf diesem Computer, im Ordner der Unterhaltung, neben OpenCode. Er verwaltet Modell, Befehle und Verlauf selbst, daher gelten Modellauswahl und Planmodus nur für OpenCode-Unterhaltungen."
+    "limits": "Ein ACP-Agent läuft als Befehl auf diesem Computer im Ordner der Unterhaltung neben der integrierten Laufzeit. Er verwaltet Modell, Befehle und Verlauf selbst. Modellauswahl und Planmodus gelten daher nur für Unterhaltungen mit der integrierten Laufzeit."
   },
   "updates": {
     "title": "App-Updates",
@@ -120,8 +120,8 @@
     "privacy": "Es wird nur die öffentliche GitHub-Releases-API kontaktiert. Workspace-Dateien und API-Schlüssel werden nicht gesendet."
   },
   "model": {
-    "title": "OpenCode-Standardmodell",
-    "hint": "Das Modell, mit dem ein neues OpenCode-Gespräch beginnt. Die Anbieter unten liefern die Auswahl.",
+    "title": "Standardmodell",
+    "hint": "Das Modell, mit dem ein neues Gespräch beginnt. Die folgenden Anbieter stellen die verfügbaren Modelle bereit.",
     "connectPrompt": "Verbinden Sie die Runtime, um Modelle zu konfigurieren.",
     "notSet": "Nicht festgelegt — Standardmodell wählen",
     "providersDivider": "Anbieter",
@@ -149,10 +149,10 @@
     "noProvidersHint": "Verbinden Sie unten einen Provider."
   },
   "providers": {
-    "title": "OpenCode-Anbieter",
-    "hint": "Authentifizierung, benutzerdefinierte Endpunkte und importierte OpenCode-Anmeldungen",
+    "title": "Modellanbieter",
+    "hint": "API-Schlüssel-Authentifizierung, eigene Endpunkte und Modellkonfiguration",
     "webHint": "Verbundene Anbieter — im Browser nur lesbar",
-    "webNote": "API-Schlüssel und eigene Endpunkte werden auf der Maschine gesetzt, die die Workbench betreibt — in der Desktop-App oder mit `osd auth set`, wenn sie ohne Fenster läuft. Zugangsdaten passieren niemals das Gateway.",
+    "webNote": "API-Schlüssel und eigene Endpunkte werden auf der Maschine gesetzt, die die Workbench betreibt — in der Desktop-App oder mit `crux auth set`, wenn sie ohne Fenster läuft. Zugangsdaten passieren niemals das Gateway.",
     "connectPrompt": "Verbinde die Laufzeit, um Anbieter zu verwalten.",
     "manage": "Verwalten",
     "collapse": "Einklappen",
@@ -183,7 +183,7 @@
     "fetchingModels": "Wird abgerufen…",
     "noModelsFound": "Der Endpunkt hat keine Modelle gemeldet.",
     "addEndpoint": "Endpunkt hinzufügen",
-    "importLogin": "Nutzen Sie bereits die OpenCode-CLI? Deren Anmeldung importieren",
+    "importLogin": "Lokale CLI-Anmeldung importieren",
     "addTitle": "Provider hinzufügen",
     "fieldName": "Name",
     "fieldApiStyle": "API-Stil",
@@ -317,8 +317,8 @@
     "couldNotRemoveMcp": "Der MCP-Server konnte nicht entfernt werden",
     "mcpRemoved": "MCP-Server {{name}} entfernt",
     "importFailed": "Import fehlgeschlagen",
-    "noOpenCodeLoginFound": "Auf diesem Rechner wurde keine OpenCode-CLI-Anmeldung gefunden.",
-    "importedLogin": "Ihre OpenCode-CLI-Anmeldung wurde importiert.",
+    "noOpenCodeLoginFound": "Auf diesem Rechner wurde keine lokale CLI-Anmeldung gefunden.",
+    "importedLogin": "Ihre lokale CLI-Anmeldung wurde importiert.",
     "couldNotSetProxy": "Proxy-Einstellung konnte nicht übernommen werden",
     "proxyApplied": "Proxy-Einstellung übernommen",
     "mirrorSaved": "Spiegel-Einstellungen gespeichert",
@@ -358,7 +358,7 @@
   },
   "remoteCompute": {
     "title": "Remote-Computing",
-    "subtitle": "Jobs auf Ihren eigenen Servern über SSH ausführen — CPU oder GPU; Slurm optional. Nutzt Ihre eigenen SSH-Schlüssel; auf dem Rechner wird nichts installiert.",
+    "subtitle": "CPU- oder GPU-Jobs mit Crux Link oder SSH auf eigenen Servern ausführen; Slurm optional.",
     "unavailable": "In der Desktop-App verfügbar.",
     "empty": "Noch keine Rechner — unten einen hinzufügen.",
     "hostPlaceholderWithHosts": "user@host — oder aus Ihrer ~/.ssh/config wählen ({{count}})",
@@ -399,7 +399,12 @@
     "signedIn": "angemeldet",
     "signOut": "Trennen",
     "signOutTitle": "Die geteilte Verbindung zu dieser Maschine schließen",
-    "sharingUnavailable": "verlangt Passwort oder Code; das setzt OpenSSH-Verbindungsteilung voraus (unter Windows nicht verfügbar)"
+    "sharingUnavailable": "Auf dieser Plattform Crux Link für Passwort und 2FA verwenden.",
+    "cruxLink": {
+      "connect": "Mit Crux Link verbinden (Assistent)",
+      "hint": "Unter Windows, macOS oder Linux verbinden. Fingerabdruck prüfen, dedizierten Schlüssel koppeln und Server vor dem Start prüfen.",
+      "close": "Assistent schließen"
+    }
   },
   "remote": {
     "title": "Fernzugriff",
@@ -510,18 +515,18 @@
     }
   },
   "cli": {
-    "title": "Terminal-Befehl (osd)",
+    "title": "Terminal-Befehl (crux)",
     "hint": "Die Werkbank im Terminal — Sitzungen, Projekte, Dateien und ein Server ohne Oberfläche für Maschinen ohne Bildschirm. Kommt mit der App, ohne Einrichtung.",
-    "readyPath": "Bereit — führe `osd` in einem neuen Terminal aus.",
-    "readyProfile": "Bereit — in {{profile}} eingetragen. Führe `osd` in einem neuen Terminal aus.",
-    "readyEnvironment": "Bereit — zu deinem Benutzer-PATH hinzugefügt. Führe `osd` in einem neuen Terminal aus.",
+    "readyPath": "Bereit — führe `crux` in einem neuen Terminal aus.",
+    "readyProfile": "Bereit — in {{profile}} eingetragen. Führe `crux` in einem neuen Terminal aus.",
+    "readyEnvironment": "Bereit — zu deinem Benutzer-PATH hinzugefügt. Führe `crux` in einem neuen Terminal aus.",
     "unreachable": "Installiert, aber über deinen PATH nicht erreichbar. Füge diese Zeile in dein Shell-Profil ein:",
     "notInstalled": "Nicht installiert. Nimm den Knopf oder starte die App neu.",
-    "unavailable": "Dieser Build enthält den Befehl osd nicht.",
+    "unavailable": "Dieser Build enthält den Befehl crux nicht.",
     "occupied": "Unter diesem Namen liegt bereits eine Datei, die nicht von dieser App stammt — benenne sie zuerst um.",
     "install": "Befehl installieren",
     "repair": "Neu installieren",
-    "error": "Installation des osd-Befehls fehlgeschlagen"
+    "error": "Installation des crux-Befehls fehlgeschlagen"
   },
   "memory": {
     "title": "Gedächtnis",
@@ -541,15 +546,15 @@
     "disabledNote": "Das Gedächtnis ist ausgeschaltet, diese Datei wird derzeit nicht geladen."
   },
   "agentModels": {
-    "title": "OpenCode-Modell und Denkaufwand je Rolle",
-    "hint": "Die Hauptrolle denkt mit einem starken Modell, Prüf- und Erkundungsrollen laufen auf einem schnellen; der Denkaufwand ist je Rolle einstellbar.",
+    "title": "Modelle und Denkaufwand der Agentenrollen",
+    "hint": "Konfigurieren Sie Modell und Denkaufwand für jede Agentenrolle oder fügen Sie eigene Rollen hinzu.",
     "noModels": "Verbinden Sie einen Anbieter, um Modelle zu wählen.",
     "followDefault": "Standard folgen",
     "modelFor": "Modell für {{agent}}",
     "defaultEffort": "Standardaufwand",
     "effortFor": "Denkaufwand für {{agent}}",
     "retiredOption": "{{model}} — nicht mehr verfügbar",
-    "primaryHint": "build und plan führen die Nachrichten aus, die du sendest. Ein hier gesetztes Modell gilt, sofern du nicht innerhalb einer Unterhaltung eines wählst — das gewinnt nur dort.",
+    "primaryHint": "Weisen Sie jeder Agentenrolle, mit der Sie sprechen oder die Sie beauftragen, ein Modell und einen Denkaufwand zu. Rollen ohne eigene Einstellung folgen dem globalen Modell.",
     "group": {
       "conversation": "Rollen, mit denen du sprichst",
       "utility": "Von der Workbench selbst genutzt"
@@ -558,8 +563,23 @@
     "about": {
       "title": "Benennt eine Sitzung nach ihrer ersten Nachricht.",
       "summary": "Schreibt die kurze Zusammenfassung eines Gesprächs.",
-      "compaction": "Schreibt ein langes Gespräch so um, dass es ins Kontextfenster passt."
-    }
+      "compaction": "Schreibt ein langes Gespräch so um, dass es ins Kontextfenster passt.",
+      "build": "Führt Aufgaben aus und nutzt Werkzeuge gemäß den konfigurierten Berechtigungen.",
+      "plan": "Analysiert Anforderungen und plant die Arbeit.",
+      "general": "Untersucht komplexe Fragen und führt mehrstufige Aufgaben aus.",
+      "explore": "Durchsucht die Codebasis, findet Dateien und erklärt die Funktionsweise des Codes.",
+      "reviewer": "Prüft wissenschaftliche Sorgfalt, Nachverfolgbarkeit und Reproduzierbarkeit, ohne Dateien zu ändern.",
+      "crux-run-doctor": "Diagnostiziert Crux-Discovery-Läufe und empfiehlt Korrekturen, ohne den Lauf zu verändern.",
+      "crux-task-author": "Macht aus einem Optimierungsziel eine validierte Crux-Discovery-Aufgabe.",
+      "memory-curator": "Konsolidiert Sitzungsverläufe, Experimentprotokolle und Korpora in .openscience/memory/ und MEMORY.md."
+    },
+    "roleName": "Rollenname",
+    "addRole": "Rolle hinzufügen",
+    "customRole": "Eigene Rolle",
+    "removeRole": "Entfernen",
+    "resetRole": "Zurücksetzen",
+    "removeRoleFor": "Rolle {{agent}} entfernen",
+    "resetRoleFor": "Konfiguration für {{agent}} zurücksetzen"
   },
   "ssh": {
     "title": "Bei {{host}} anmelden",
@@ -610,13 +630,13 @@
     "opened": "Fenster für die Berechtigungen geöffnet.",
     "error": "Computersteuerung",
     "accessibility": "Bedienungshilfen",
-    "accessibilityHint": "Erforderlich. Erlaubt dem Helfer, die Oberfläche einer App zu lesen und zu bedienen. Die Berechtigung erhält Open Science Computer Use — ein eigenständiger Helfer — und nicht die gesamte Workbench.",
+    "accessibilityHint": "Erforderlich. Erlaubt dem Helfer, die Oberfläche einer App zu lesen und zu bedienen. Die Berechtigung erhält Crux Computer Use — ein eigenständiger Helfer — und nicht die gesamte Workbench.",
     "screenshots": "Bildschirmaufnahme",
-    "screenshotsHint": "Optional, und sie wird Open Science selbst erteilt, nicht dem Helfer — macOS rechnet die Bildschirmaufnahme der App zu, welche die Anfrage gestartet hat. Nur nötig, wenn der Agent ein Fenster ansehen muss, das er nicht als Text lesen kann, etwa ein Diagramm oder eine Zeichenfläche."
+    "screenshotsHint": "Optional, und sie wird Crux selbst erteilt, nicht dem Helfer — macOS rechnet die Bildschirmaufnahme der App zu, welche die Anfrage gestartet hat. Nur nötig, wenn der Agent ein Fenster ansehen muss, das er nicht als Text lesen kann, etwa ein Diagramm oder eine Zeichenfläche."
   },
   "userBrowser": {
     "title": "Ein Browser, den du installiert hast",
-    "hint": "Open Science hat auf diesem Mac einen Browser gefunden, den sein Agent von der Shell aus steuern kann. Hier gibt es nichts einzustellen — es steht hier, damit du weißt, dass er erreichbar ist.",
+    "hint": "Crux hat auf diesem Mac einen Browser gefunden, den sein Agent von der Shell aus steuern kann. Hier gibt es nichts einzustellen — es steht hier, damit du weißt, dass er erreichbar ist.",
     "name": "ego lite",
     "reachable": "Installiert und erreichbar. Der Agent fragt vor der ersten Nutzung in jeder Unterhaltung.",
     "notReachable": "Installiert, aber sein Kommandozeilenwerkzeug fehlt auf diesem Rechner, also kommt der Agent nicht heran. Führe die Einrichtung von ego lite aus, um es nachzurüsten.",

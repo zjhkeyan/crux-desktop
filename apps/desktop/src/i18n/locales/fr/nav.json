@@ -26,7 +26,7 @@
     "menuScratch": "Partir de zéro",
     "menuExisting": "Utiliser un dossier existant",
     "importTitle": "Importer un dossier existant",
-    "importSubtitle": "Choisissez comment Open Science Desktop doit utiliser « {{name}} ».",
+    "importSubtitle": "Choisissez comment Crux Desktop doit utiliser « {{name}} ».",
     "importCopy": "Copier dans l’espace de travail",
     "importCopyHint": "Crée une copie gérée et laisse l’original intact, mais utilise plus d’espace disque.",
     "importInPlace": "Utiliser sur place",

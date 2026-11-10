@@ -24,11 +24,11 @@ case "$target" in *windows*) ext=".exe" ;; esac
 echo "Building the frontend so osd embeds the current web client..."
 (cd "$root" && pnpm --filter @ai4s/desktop build)
 
-echo "Building osd for ${target}..."
+echo "Building crux for ${target}..."
 cargo build --release --target "$target" --package osd-cli --manifest-path "$root/Cargo.toml"
 
 dest_dir="$root/apps/desktop/src-tauri/binaries"
 mkdir -p "$dest_dir"
-cp "$root/target/$target/release/osd$ext" "$dest_dir/osd-$target$ext"
-chmod +x "$dest_dir/osd-$target$ext"
-ls -la "$dest_dir/osd-$target$ext"
+cp "$root/target/$target/release/crux$ext" "$dest_dir/crux-$target$ext"
+chmod +x "$dest_dir/crux-$target$ext"
+ls -la "$dest_dir/crux-$target$ext"

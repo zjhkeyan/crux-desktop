@@ -1,9 +1,9 @@
 // Reset times read off a CLI's usage panel: "Resets 11:10pm
 // (America/Los_Angeles)", "Resets Nov 1 at 3pm (America/Los_Angeles)",
-// "resets 17:26 on 4 Nov", "Resets in 2h 5m". Ported from Orca (MIT):
+// "resets 17:26 on 4 Nov", "Resets in 2h 5m". Ported from Crux (MIT):
 // `claude-pty-reset-parser.ts` and `time-zone-wall-clock.ts`.
 //
-// One difference: Orca reads a weekday or a bare time in the machine's zone even
+// One difference: Crux reads a weekday or a bare time in the machine's zone even
 // when the panel names another; here the named zone is used wherever one is
 // given, so the reset is right when the two differ.
 use std::sync::LazyLock;
@@ -20,7 +20,7 @@ fn re(pattern: &str) -> Regex {
 
 static RESET_LINE: LazyLock<Regex> = LazyLock::new(|| re(r"(?i)resets?\s+(?:at\s+|in\s+)?(.+)"));
 /// "Nov1 at 3pm" as the TUI sometimes draws it; the character after the day
-/// is captured and put back, standing in for Orca's lookahead.
+/// is captured and put back, standing in for Crux's lookahead.
 static MONTH_DAY_COMPACT: LazyLock<Regex> =
     LazyLock::new(|| re(&format!(r"(?i)\b({MONTHS})(\d{{1,2}})(\s*at\s*\d|\D|$)")));
 static DAY_AT_TIME: LazyLock<Regex> = LazyLock::new(|| re(r"(?i)(\d{1,2})\s*at\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm))"));
@@ -80,7 +80,7 @@ fn normalize(raw: &str) -> String {
     TIME_BEFORE_ZONE.replace_all(&text, "$1$2 (").into_owned()
 }
 
-/// Orca's order: relative, month and day, weekday, a bare 12-hour time, a
+/// Crux's order: relative, month and day, weekday, a bare 12-hour time, a
 /// 24-hour time.
 fn parse_reset(text: &str, now: DateTime<Utc>) -> Option<i64> {
     let zone = ZONE.captures(text).and_then(|m| m[1].trim().parse::<Tz>().ok());

@@ -1,5 +1,5 @@
 // Plan usage read through the agents' own CLIs, for when the usage endpoint
-// cannot be asked directly. Ported from Orca (MIT): `claude-pty.ts`,
+// cannot be asked directly. Ported from Crux (MIT): `claude-pty.ts`,
 // `claude-pty-usage-parser.ts`, `codex-rpc-rate-limit-probe.ts`,
 // `codex-pty-rate-limit-probe.ts`, `codex-pty-status-parser.ts`.
 //
@@ -217,11 +217,11 @@ static CLAUDE_21_PANEL: LazyLock<Regex> = LazyLock::new(|| {
 static RATE_LIMITED: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?i)rate limited\.?\s+please try again later").unwrap());
 
-/// Start `claude` hidden, type `/usage`, and read the panel. Timings are Orca's:
+/// Start `claude` hidden, type `/usage`, and read the panel. Timings are Crux's:
 /// 2 s for the TUI to start (its prompt is not reliably detectable), Enter
 /// every 0.8 s to page through, 2 s to settle once the panel shows.
 ///
-/// The folder-trust question defaults to "No, exit" on 2.1.312, so Orca's
+/// The folder-trust question defaults to "No, exit" on 2.1.312, so Crux's
 /// `y` + Enter quits the CLI. It is answered by moving to Yes first, with
 /// pauses, since keys sent together are read before the menu is ready. Only the
 /// empty probe folder is ever trusted.
@@ -381,7 +381,7 @@ pub fn parse_claude_usage(output: &str) -> Vec<RateLimitWindow> {
 
 // ─── Codex: `app-server` ────────────────────────────────────────────
 
-/// Orca's list of what Codex says when only signing in again helps.
+/// Crux's list of what Codex says when only signing in again helps.
 static CODEX_AUTH: LazyLock<Vec<Regex>> = LazyLock::new(|| {
     [
         r"(?i)access token could not be refreshed",
@@ -513,7 +513,7 @@ pub fn codex_reset_credits(result: &Value) -> Option<u32> {
 
 /// Map `rateLimits` by window length: 300 minutes is the session window and
 /// 10080 the week, a minute either way (older builds drift by one). A window of
-/// any other length keeps Orca's legacy reading: primary is the session,
+/// any other length keeps Crux's legacy reading: primary is the session,
 /// secondary the week.
 pub fn codex_rpc_windows(result: &Value) -> Vec<RateLimitWindow> {
     let limits = result.get("rateLimits").unwrap_or(&Value::Null);
@@ -551,7 +551,7 @@ pub fn codex_rpc_windows(result: &Value) -> Vec<RateLimitWindow> {
 /// The terminal fallback when the RPC fails for a reason other than the login:
 /// type `/status`, Enter after 350 ms (it picks the command from the popup),
 /// Enter again after 3 s if no limit row shows yet (it runs it), settle 1 s
-/// once one does (Orca's timings). Started with the update check off, so the
+/// once one does (Crux's timings). Started with the update check off, so the
 /// update menu, where Enter would install an update, is never shown.
 pub fn codex_status(env: &LaunchEnv, cwd: &Path) -> Result<Vec<RateLimitWindow>, CliFailure> {
     let mut typed_at: Option<Duration> = None;

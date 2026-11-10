@@ -1,7 +1,7 @@
 export function computerProviderUnavailableMessage(platform: NodeJS.Platform): string {
   if (platform === 'darwin') {
     return [
-      'computer-use has no native provider for darwin because Open Science Computer Use.app was not found or this macOS version is unsupported (macOS 14+ is required).',
+      'computer-use has no native provider for darwin because Crux Computer Use.app was not found or this macOS version is unsupported (macOS 14+ is required).',
       'For local development, run scripts/dev/build-computer-use.sh and restart the app.'
     ].join(' ')
   }

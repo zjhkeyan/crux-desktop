@@ -26,7 +26,7 @@
     "menuScratch": "처음부터 시작",
     "menuExisting": "기존 폴더 사용",
     "importTitle": "기존 폴더 가져오기",
-    "importSubtitle": "Open Science Desktop에서 “{{name}}” 폴더를 사용할 방법을 선택하세요.",
+    "importSubtitle": "Crux Desktop에서 “{{name}}” 폴더를 사용할 방법을 선택하세요.",
     "importCopy": "작업 공간으로 복사",
     "importCopyHint": "관리되는 복사본을 만들고 원본은 그대로 두지만 디스크 공간을 추가로 사용합니다.",
     "importInPlace": "제자리에서 사용",

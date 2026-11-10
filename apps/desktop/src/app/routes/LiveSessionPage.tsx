@@ -216,7 +216,7 @@ export function LiveSessionPage() {
   // runtime starts), so a pane's session missing from it is asked about
   // directly; only a confirmed deletion closes the pane.
   useEffect(() => {
-    if (sessions.length === 0) return;
+    if (!connected) return;
     const listed = new Set(sessions.map((s) => s.id));
     const missing = new Set<string>();
     for (const g of useLayoutStore.getState().groups) {
@@ -234,7 +234,7 @@ export function LiveSessionPage() {
     return () => {
       cancelled = true;
     };
-  }, [sessions, pruneSessions]);
+  }, [connected, sessions, pruneSessions]);
 
   // File Screens under their projects once both lists are in: Screens saved
   // before Screens had projects, and those of a project that was removed.

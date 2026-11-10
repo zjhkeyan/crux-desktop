@@ -98,7 +98,7 @@ describe('MacOSNativeProviderClient', () => {
     launches.length = 0
     mkdtempSyncMock.mockImplementation((prefix: string) => `${prefix}${sockets.length}`)
     resolveMacOSComputerUseAppPathMock.mockReturnValue(
-      '/Applications/Open Science.app/Contents/Resources/computer-use/Open Science Computer Use.app'
+      '/Applications/Crux.app/Contents/Resources/computer-use/Crux Computer Use.app'
     )
     // `open` reports only whether the launch was accepted; by default it was.
     execFileMock.mockImplementation((_file: string, args: string[], _options: unknown, done: Launch['done']) => {
@@ -527,7 +527,7 @@ describe('MacOSNativeProviderClient', () => {
     // rather than the executable inside it — that is what gives the helper its
     // own TCC identity.
     expect(args[0]).toBe('-n')
-    expect(args[1]).toMatch(/Open Science Computer Use\.app$/)
+    expect(args[1]).toMatch(/Crux Computer Use\.app$/)
     expect(args).toContain('--args')
     expect(args).toContain('--agent')
     expect(args).toContain('--token-file')

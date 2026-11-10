@@ -55,7 +55,7 @@
   },
   "page": {
     "title": "Configuración",
-    "subtitle": "Todo aquí configura el entorno de ejecución de OpenCode incluido — una sola configuración, sin copias."
+    "subtitle": "Todos estos ajustes configuran el entorno de ejecución de agentes integrado: una configuración, sin copias."
   },
   "runtime": {
     "title": "Red",
@@ -83,8 +83,8 @@
     "mirrorPypiPlaceholder": "https://pypi.tuna.tsinghua.edu.cn/simple",
     "mirrorPythonPlaceholder": "https://mirror.example.com/python-build-standalone",
     "mirrorHint": "Espejos opcionales, usados solo al configurar herramientas de Python (Jupyter, bases de datos científicas) en redes donde pypi.org / github.com son lentos. Déjalo en blanco para los valores predeterminados.",
-    "serverTitle": "Servidor de OpenCode",
-    "serverHint": "El OpenCode que maneja la aplicación. El integrado arranca solo; escribe una dirección solo para usar tu propio opencode serve."
+    "serverTitle": "Servidor del runtime de agentes",
+    "serverHint": "El runtime de agentes que controla la aplicación. El incluido se inicia automáticamente; indica una URL solo para usar tu propio servidor de runtime."
   },
   "acp": {
     "add": "Añadir un agente",
@@ -96,7 +96,7 @@
     "commandPlaceholder": "Comando (npx, gemini, …)",
     "argsLabel": "Argumentos",
     "argsPlaceholder": "Argumentos (-y @agentclientprotocol/codex-acp)",
-    "limits": "Un agente ACP se ejecuta como un comando en este equipo, en la carpeta de la conversación, junto a OpenCode. Gestiona su propio modelo, comandos e historial, así que el selector de modelo y el modo plan solo se aplican a conversaciones de OpenCode."
+    "limits": "Un agente ACP se ejecuta como un comando en este equipo, en la carpeta de la conversación, junto al runtime integrado. Gestiona su propio modelo, comandos e historial, así que el selector de modelo y el modo plan solo se aplican a las conversaciones del runtime integrado."
   },
   "updates": {
     "title": "Actualizaciones de la app",
@@ -120,8 +120,8 @@
     "privacy": "Solo se contacta la API pública de GitHub Releases. No se envían archivos del workspace ni claves de API."
   },
   "model": {
-    "title": "Modelo predeterminado de OpenCode",
-    "hint": "El modelo con el que empieza una conversación nueva de OpenCode. Los proveedores de abajo ofrecen las opciones.",
+    "title": "Modelo predeterminado",
+    "hint": "El modelo con el que comienza una conversación nueva. Los proveedores de abajo ofrecen los modelos disponibles.",
     "connectPrompt": "Conecta el entorno de ejecución para configurar modelos.",
     "notSet": "Sin configurar — elige un modelo predeterminado",
     "providersDivider": "Proveedores",
@@ -149,10 +149,10 @@
     "noProvidersHint": "Conecta un proveedor más abajo."
   },
   "providers": {
-    "title": "Proveedores de OpenCode",
-    "hint": "Autenticación, endpoints personalizados e inicios de sesión de OpenCode importados",
+    "title": "Proveedores de modelos",
+    "hint": "Autenticación con clave API, endpoints personalizados y configuración de modelos",
     "webHint": "Proveedores conectados: solo lectura desde el navegador",
-    "webNote": "Las claves de API y los endpoints personalizados se configuran en la máquina que ejecuta el workbench: en la app de escritorio, o con `osd auth set` si funciona sin ventana. Las credenciales nunca pasan por el gateway.",
+    "webNote": "Las claves de API y los endpoints personalizados se configuran en la máquina que ejecuta el workbench: en la app de escritorio, o con `crux auth set` si funciona sin ventana. Las credenciales nunca pasan por el gateway.",
     "connectPrompt": "Conecta el runtime para gestionar proveedores.",
     "manage": "Administrar",
     "collapse": "Contraer",
@@ -183,7 +183,7 @@
     "fetchingModels": "Obteniendo…",
     "noModelsFound": "El endpoint no informó ningún modelo.",
     "addEndpoint": "Añadir endpoint",
-    "importLogin": "¿Ya usas la CLI de OpenCode? Importa su inicio de sesión",
+    "importLogin": "Importar inicio de sesión de la CLI local",
     "addTitle": "Añadir un proveedor",
     "fieldName": "Nombre",
     "fieldApiStyle": "Estilo de API",
@@ -317,8 +317,8 @@
     "couldNotRemoveMcp": "No se pudo quitar el servidor MCP",
     "mcpRemoved": "Servidor MCP {{name}} eliminado",
     "importFailed": "Error al importar",
-    "noOpenCodeLoginFound": "No se encontró ningún inicio de sesión de la CLI de OpenCode en esta máquina.",
-    "importedLogin": "Se importó tu inicio de sesión de la CLI de OpenCode.",
+    "noOpenCodeLoginFound": "No se encontró ningún inicio de sesión de la CLI local en este equipo.",
+    "importedLogin": "Se importó tu inicio de sesión de la CLI local.",
     "couldNotSetProxy": "No se pudo aplicar la configuración del proxy",
     "proxyApplied": "Configuración del proxy aplicada",
     "mirrorSaved": "Configuración de espejo guardada",
@@ -358,7 +358,7 @@
   },
   "remoteCompute": {
     "title": "Computación remota",
-    "subtitle": "Ejecuta trabajos en tus propios servidores por SSH — CPU o GPU; Slurm opcional. Usa tus propias claves SSH; no se instala nada en la máquina.",
+    "subtitle": "Ejecute trabajos CPU o GPU en sus servidores con Crux Link o SSH; Slurm opcional.",
     "unavailable": "Disponible en la app de escritorio.",
     "empty": "Aún no hay máquinas — añade una abajo.",
     "hostPlaceholderWithHosts": "usuario@host — o elige entre tu ~/.ssh/config ({{count}})",
@@ -399,7 +399,12 @@
     "signedIn": "sesión iniciada",
     "signOut": "Desconectar",
     "signOutTitle": "Cerrar la conexión compartida con esta máquina",
-    "sharingUnavailable": "pide contraseña o código, lo que requiere conexión compartida de OpenSSH (no disponible en Windows)"
+    "sharingUnavailable": "Use Crux Link para acceder con contraseña y 2FA en esta plataforma.",
+    "cruxLink": {
+      "connect": "Conectar con Crux Link (asistente)",
+      "hint": "Conecte desde Windows, macOS o Linux. Verifique la huella, vincule una clave dedicada y compruebe el servidor antes de iniciar.",
+      "close": "Cerrar asistente"
+    }
   },
   "remote": {
     "title": "Acceso remoto",
@@ -510,18 +515,18 @@
     }
   },
   "cli": {
-    "title": "Comando de terminal (osd)",
+    "title": "Comando de terminal (crux)",
     "hint": "El taller desde una terminal: sesiones, proyectos, archivos y un servidor sin interfaz para una máquina sin pantalla. Se instala con la app, sin configurar nada.",
-    "readyPath": "Listo: ejecuta `osd` en una terminal nueva.",
-    "readyProfile": "Listo: añadido a {{profile}}. Ejecuta `osd` en una terminal nueva.",
-    "readyEnvironment": "Listo: añadido a tu PATH de usuario. Ejecuta `osd` en una terminal nueva.",
+    "readyPath": "Listo: ejecuta `crux` en una terminal nueva.",
+    "readyProfile": "Listo: añadido a {{profile}}. Ejecuta `crux` en una terminal nueva.",
+    "readyEnvironment": "Listo: añadido a tu PATH de usuario. Ejecuta `crux` en una terminal nueva.",
     "unreachable": "Instalado, pero nada en tu PATH lo alcanza. Añade esta línea a tu perfil de shell:",
     "notInstalled": "No instalado. Usa el botón o reinicia la app.",
-    "unavailable": "Esta versión no incluye el comando osd.",
+    "unavailable": "Esta versión no incluye el comando crux.",
     "occupied": "Ya existe un archivo con ese nombre que no escribió esta app: renómbralo primero.",
     "install": "Instalar el comando",
     "repair": "Reinstalar",
-    "error": "No se pudo instalar el comando osd"
+    "error": "No se pudo instalar el comando crux"
   },
   "memory": {
     "title": "Memoria",
@@ -541,15 +546,15 @@
     "disabledNote": "La memoria está desactivada, así que este archivo no se carga ahora mismo."
   },
   "agentModels": {
-    "title": "Modelo y esfuerzo de OpenCode por rol",
-    "hint": "El rol principal razona con un modelo potente, los roles de revisión y exploración usan uno rápido, y cada uno tiene su nivel de esfuerzo.",
+    "title": "Modelos y esfuerzo de razonamiento por rol de agente",
+    "hint": "Configura el modelo y el esfuerzo de razonamiento de cada rol de agente o añade roles personalizados.",
     "noModels": "Conecta un proveedor para elegir modelos.",
     "followDefault": "Seguir el predeterminado",
     "modelFor": "Modelo para {{agent}}",
     "defaultEffort": "Esfuerzo predeterminado",
     "effortFor": "Esfuerzo de razonamiento para {{agent}}",
     "retiredOption": "{{model}} — ya no se sirve",
-    "primaryHint": "build y plan ejecutan los mensajes que envías. El modelo definido aquí se aplica salvo que elijas uno dentro de una conversación, que prevalece solo en esa conversación.",
+    "primaryHint": "Asigna un modelo y un esfuerzo de razonamiento a cada rol de agente con el que converses o al que delegues tareas; los roles sin configuración propia usan el modelo global.",
     "group": {
       "conversation": "Roles con los que hablas",
       "utility": "Usados por el banco de trabajo"
@@ -558,8 +563,23 @@
     "about": {
       "title": "Nombra una sesión a partir de su primer mensaje.",
       "summary": "Escribe el resumen breve de una conversación.",
-      "compaction": "Reescribe una conversación larga para que quepa en la ventana de contexto."
-    }
+      "compaction": "Reescribe una conversación larga para que quepa en la ventana de contexto.",
+      "build": "Ejecuta tareas y utiliza herramientas según los permisos configurados.",
+      "plan": "Analiza los requisitos y planifica el trabajo.",
+      "general": "Investiga preguntas complejas y ejecuta tareas de varios pasos.",
+      "explore": "Explora el código para encontrar archivos y explicar cómo funciona.",
+      "reviewer": "Revisa el rigor científico, la trazabilidad y la reproducibilidad sin modificar archivos.",
+      "crux-run-doctor": "Diagnostica ejecuciones de descubrimiento de Crux y recomienda soluciones sin modificar la ejecución.",
+      "crux-task-author": "Convierte un objetivo de optimización en una tarea de descubrimiento de Crux validada.",
+      "memory-curator": "Consolida transcripciones, registros de experimentos y corpus en .openscience/memory/ y MEMORY.md."
+    },
+    "roleName": "Nombre del rol",
+    "addRole": "Añadir rol",
+    "customRole": "Rol personalizado",
+    "removeRole": "Eliminar",
+    "resetRole": "Restablecer",
+    "removeRoleFor": "Eliminar rol {{agent}}",
+    "resetRoleFor": "Restablecer la configuración de {{agent}}"
   },
   "ssh": {
     "title": "Iniciar sesión en {{host}}",
@@ -610,13 +630,13 @@
     "opened": "Se abrió la ventana de permisos.",
     "error": "Uso del equipo",
     "accessibility": "Accesibilidad",
-    "accessibilityHint": "Obligatorio. Permite al asistente leer la interfaz de una aplicación y actuar sobre ella. Se concede a Open Science Computer Use — un asistente independiente — y no a todo el banco de trabajo.",
+    "accessibilityHint": "Obligatorio. Permite al asistente leer la interfaz de una aplicación y actuar sobre ella. Se concede a Crux Computer Use — un asistente independiente — y no a todo el banco de trabajo.",
     "screenshots": "Grabación de pantalla",
-    "screenshotsHint": "Opcional, y se concede a Open Science en sí, no al asistente — macOS atribuye la captura de pantalla a la aplicación que inició la petición. Solo hace falta cuando el agente tiene que mirar una ventana que no puede leer como texto, como un gráfico o un lienzo."
+    "screenshotsHint": "Opcional, y se concede a Crux en sí, no al asistente — macOS atribuye la captura de pantalla a la aplicación que inició la petición. Solo hace falta cuando el agente tiene que mirar una ventana que no puede leer como texto, como un gráfico o un lienzo."
   },
   "userBrowser": {
     "title": "Un navegador que instalaste tú",
-    "hint": "Open Science encontró en este Mac un navegador que su agente puede manejar desde la shell. No hay nada que configurar: está aquí para que sepas que puede alcanzarlo.",
+    "hint": "Crux encontró en este Mac un navegador que su agente puede manejar desde la shell. No hay nada que configurar: está aquí para que sepas que puede alcanzarlo.",
     "name": "ego lite",
     "reachable": "Instalado y accesible. El agente pedirá permiso antes del primer uso en cada conversación.",
     "notReachable": "Instalado, pero su herramienta de línea de comandos no está en esta máquina, así que el agente no puede alcanzarlo. Ejecuta la configuración propia de ego lite para añadirla.",

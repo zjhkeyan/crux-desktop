@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Open Science",
+  "productName": "Crux",
   "version": "0.7.1",
-  "identifier": "com.ai4s.workbench",
+  "identifier": "com.crux.desktop",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -13,7 +13,7 @@
   "app": {
     "windows": [
       {
-        "title": "Open Science",
+        "title": "Crux",
         "width": 1440,
         "height": 900,
         "minWidth": 1000,
@@ -38,7 +38,7 @@
       "binaries/opencode",
       "binaries/uv",
       "binaries/agent-browser",
-      "binaries/osd"
+      "binaries/crux"
     ],
     "macOS": {
       "hardenedRuntime": true,
@@ -57,11 +57,13 @@
     "resources": {
       "../../../runtime/osd-plugin": "osd-plugin/",
         "../../../runtime/computer": "computer/",
+        "../../../runtime/worktree": "worktree/",
         "computer-use": "computer-use/",
       "../../../runtime/skills/external/ai4s-skills": "skills/",
       "../../../runtime/skills/external/anthropic-skills": "skills-office/",
       "../../../runtime/skills/external/agent-browser": "skills-agent-browser/",
       "../../../runtime/skills/core": "skills-core/",
+      "../../../runtime/skills/crux": "skills-crux/",
       "../../../runtime/opencode-profile/agent": "profile/agent/",
       "../../../runtime/opencode-profile/command": "profile/command/",
       "../../../runtime/harness": "harness/",

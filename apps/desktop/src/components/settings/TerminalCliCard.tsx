@@ -9,11 +9,11 @@ import { getCliShimStatus, installCliShim, isTauri, type CliShimStatus } from "@
 
 /** Where the wrapper goes. Stands in only while the backend's answer — which
  *  resolves the same path from the user's home — is still on its way. */
-const DEFAULT_SHIM = "~/.local/bin/osd";
+const DEFAULT_SHIM = "~/.local/bin/crux";
 
 /** Settings → Remote Access → the terminal command.
  *
- *  The app installs `osd` on launch, so this card mostly REPORTS: where the
+ *  The app installs `crux` on launch, so this card mostly REPORTS: where the
  *  command is, and what (if anything) was touched to make a terminal find it.
  *  The button is for repair — an app that moved, or a launch whose attempt
  *  failed. The line to paste appears only when nothing automatic worked. */

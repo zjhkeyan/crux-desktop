@@ -69,7 +69,7 @@
   },
   "skills": {
     "title": "Compétences et agents",
-    "subtitle": "Tout ce que l’agent peut utiliser, chargé en direct depuis OpenCode.",
+    "subtitle": "Tout ce que l’agent peut utiliser, chargé en direct depuis le runtime.",
     "install": {
       "sectionTitle": "Installer une compétence",
       "placeholder": "Collez un SKILL.md, ou une URL / description que l'agent transformera en compétence",
@@ -88,7 +88,7 @@
       "found": "trouvé",
       "notFound": "introuvable",
       "appManaged": "géré par l'app",
-      "note": "OpenCode exécute le code avec ce qui est installé ici (p. ex. Python via son outil shell). uv est fourni avec l'application, et Jupyter peut être géré par l'application dans Réglages → Connecteurs. Python et R ne sont pas intégrés : installez-les, ou un Science Pack, pour activer l'analyse."
+      "note": "Le runtime d'agent exécute le code avec les composants installés ici (par exemple Python via son outil shell). uv est fourni avec l'application, et Jupyter peut être géré par l'application dans Réglages → Connecteurs. Python et R ne sont pas intégrés : installez-les vous-même ou installez le Science Pack pour activer l'analyse."
     },
     "agentsSection": {
       "heading": "Agents",

@@ -29,7 +29,7 @@ export function ContextMenu({
   label: string;
 }) {
   return (
-    // `modal={false}`, as Orca sets on its own menus. A modal Radix menu mounts
+    // `modal={false}`, as Crux sets on its own menus. A modal Radix menu mounts
     // a scroll lock over the whole document while it is open — fine for a
     // dialog, wrong for a right-click menu that sits on top of a scrollable
     // conversation, and a menu dismissed in an unexpected way can leave the

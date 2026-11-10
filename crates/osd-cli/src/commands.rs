@@ -42,6 +42,8 @@ pub fn run(args: &Args) -> Result<(), String> {
         ("audit", _) => crate::screens::audit(args),
         ("project", "ls") | ("project", "list") => projects(args),
         ("project", "new") | ("project", "create") => new_project(args),
+        ("project", "add") | ("project", "import") => add_project(args),
+        ("worktree", sub) => worktree_cmd(args, sub),
         ("run", "ls") | ("run", "list") => runs(args),
         ("run", "log") => run_log(args),
         ("fs", "ls") | ("fs", "list") => fs_ls(args),
@@ -58,8 +60,8 @@ pub fn run(args: &Args) -> Result<(), String> {
         ("permission", "allow") => reply(args, "always"),
         ("permission", "once") => reply(args, "once"),
         ("permission", "deny") | ("permission", "reject") => reply(args, "reject"),
-        (cmd, "") => Err(format!("unknown command {cmd:?} — try `osd help`")),
-        (cmd, sub) => Err(format!("unknown command {cmd} {sub:?} — try `osd help`")),
+        (cmd, "") => Err(format!("unknown command {cmd:?} — try `crux help`")),
+        (cmd, sub) => Err(format!("unknown command {cmd} {sub:?} — try `crux help`")),
     }
 }
 
@@ -68,10 +70,10 @@ pub fn run(args: &Args) -> Result<(), String> {
 fn login(args: &Args) -> Result<(), String> {
     let base = args
         .value("gateway")
-        .ok_or("usage: osd login --gateway <url> --token <token>")?;
+        .ok_or("usage: crux login --gateway <url> --token <token>")?;
     let token = args
         .value("token")
-        .ok_or("usage: osd login --gateway <url> --token <token>")?;
+        .ok_or("usage: crux login --gateway <url> --token <token>")?;
     let path = crate::client::save_login(base.trim_end_matches('/'), &token)?;
     println!("Saved to {}", path.display());
     // Prove it works now rather than at the next command, when the user has
@@ -110,7 +112,7 @@ fn sessions(args: &Args) -> Result<(), String> {
     }
     let rows = list.as_array().cloned().unwrap_or_default();
     if rows.is_empty() {
-        println!("No sessions yet. Create one with `osd session new`.");
+        println!("No sessions yet. Create one with `crux session new`.");
         return Ok(());
     }
     for s in rows {
@@ -152,7 +154,7 @@ fn send(args: &Args) -> Result<(), String> {
     let session = args.at(0, "session id")?;
     let text = args.rest(1);
     if text.trim().is_empty() {
-        return Err("nothing to send: osd session send <id> <prompt…>".into());
+        return Err("nothing to send: crux session send <id> <prompt…>".into());
     }
     // How long the transcript was BEFORE this turn. Everything below is
     // relative to that: a reply is only this turn's if it arrived after it.
@@ -246,14 +248,14 @@ fn wait_for_reply(
         {
             return Err(format!(
                 "the turn never started. The prompt is in the transcript with no reply — \
-                 usually an unavailable model or provider. Check `osd session show {session}` \
+                 usually an unavailable model or provider. Check `crux session show {session}` \
                  and the runtime log."
             ));
         }
         if Instant::now() >= deadline {
             return Err(format!(
                 "still running after {timeout}s. It keeps going — check with \
-                 `osd session show {session}`, or stop it with `osd session abort {session}`."
+                 `crux session show {session}`, or stop it with `crux session abort {session}`."
             ));
         }
         // Approvals block a turn forever if nobody answers, so say so rather
@@ -282,12 +284,12 @@ fn wait_for_reply(
                         );
                     }
                     if rows.len() > 3 {
-                        eprintln!("  … and {} more (osd permission ls)", rows.len() - 3);
+                        eprintln!("  … and {} more (crux permission ls)", rows.len() - 3);
                     }
                     eprintln!(
-                        "Answer here:  osd permission allow <id>   (or `once` / `deny`)\n\
+                        "Answer here:  crux permission allow <id>   (or `once` / `deny`)\n\
                          Or in a browser: {} (the page asks for the token)\n\
-                         Unattended machines can skip approvals entirely — see `osd approval`.",
+                         Unattended machines can skip approvals entirely — see `crux approval`.",
                         client.web_url()
                     );
                 }
@@ -406,7 +408,7 @@ fn session_rename(args: &Args) -> Result<(), String> {
     let session = args.at(0, "session id")?;
     let title = args.rest(1);
     if title.trim().is_empty() {
-        return Err("no title: osd session rename <id> <title…>".into());
+        return Err("no title: crux session rename <id> <title…>".into());
     }
     client.patch(&format!("/v1/sessions/{session}"), json!({ "title": title }))?;
     Ok(())
@@ -423,7 +425,7 @@ fn session_archive(args: &Args, archived: bool) -> Result<(), String> {
 fn session_move(args: &Args) -> Result<(), String> {
     let client = Client::connect(args)?;
     let session = args.at(0, "session id")?;
-    let name = args.value("project").ok_or("which project? osd session move <id> --project NAME")?;
+    let name = args.value("project").ok_or("which project? crux session move <id> --project NAME")?;
     let projects = client.get("/v1/projects")?;
     let id = projects
         .as_array()
@@ -431,7 +433,7 @@ fn session_move(args: &Args) -> Result<(), String> {
         .flatten()
         .find(|p| p["name"].as_str().is_some_and(|n| n.eq_ignore_ascii_case(&name)))
         .and_then(|p| p["id"].as_str().map(str::to_string))
-        .ok_or_else(|| format!("no project named {name:?} (osd project ls)"))?;
+        .ok_or_else(|| format!("no project named {name:?} (crux project ls)"))?;
     let moved = client.post(&format!("/v1/sessions/{session}/move"), json!({ "project": id }))?;
     println!("{}", moved["directory"].as_str().unwrap_or(""));
     Ok(())
@@ -441,7 +443,7 @@ fn session_find(args: &Args) -> Result<(), String> {
     let client = Client::connect(args)?;
     let words = args.rest(0);
     if words.trim().is_empty() {
-        return Err("find what? osd session find <words…>".into());
+        return Err("find what? crux session find <words…>".into());
     }
     let limit = args.value("limit").unwrap_or_else(|| "20".into());
     let found = client.get(&format!("/v1/sessions/find?q={}&limit={}", urlencode(&words), urlencode(&limit)))?;
@@ -485,7 +487,7 @@ fn projects(args: &Args) -> Result<(), String> {
     }
     let rows = list.as_array().cloned().unwrap_or_default();
     if rows.is_empty() {
-        println!("No projects yet. Create one with `osd project new <name>`.");
+        println!("No projects yet. Create one with `crux project new <name>`.");
         return Ok(());
     }
     for p in rows {
@@ -499,13 +501,102 @@ fn new_project(args: &Args) -> Result<(), String> {
     let client = Client::connect(args)?;
     let name = args.rest(0);
     if name.trim().is_empty() {
-        return Err("usage: osd project new <name>".into());
+        return Err("usage: crux project new <name>".into());
     }
     let created = client.post("/v1/projects", json!({ "name": name }))?;
     if args.has("json") {
         return print_json(&created);
     }
     println!("{}", created["path"].as_str().unwrap_or("(created)"));
+    Ok(())
+}
+
+fn add_project(args: &Args) -> Result<(), String> {
+    let client = Client::connect(args)?;
+    let path = args.value("path").unwrap_or_else(|| args.rest(0));
+    if path.trim().is_empty() {
+        return Err("usage: crux project add <path> [--mode in-place|copy]".into());
+    }
+    let mode = args.value("mode").unwrap_or_else(|| "in-place".into());
+    let imported = client.post("/v1/projects", json!({ "path": path, "mode": mode }))?;
+    if args.has("json") {
+        return print_json(&imported);
+    }
+    println!(
+        "{} ({})",
+        imported["name"].as_str().unwrap_or("(imported)"),
+        imported["path"].as_str().unwrap_or("")
+    );
+    Ok(())
+}
+
+fn worktree_cmd(args: &Args, sub: &str) -> Result<(), String> {
+    let sub = if sub.is_empty() { "ps" } else { sub };
+    let cwd = std::env::current_dir()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_else(|_| ".".into());
+    let repo_root = args
+        .value("directory")
+        .or_else(|| args.value("repo"))
+        .or_else(|| {
+            Client::connect(args)
+                .and_then(|c| c.get("/v1/whoami"))
+                .ok()
+                .and_then(|w| w["directory"].as_str().map(str::to_string))
+        })
+        .unwrap_or_else(|| cwd.clone());
+
+    let task_id = args.value("worktree").or_else(|| args.positional.first().cloned());
+    let payload = json!({
+        "sub": sub,
+        "repoRoot": repo_root,
+        "cwd": cwd,
+        "taskId": task_id,
+        "agent": args.value("agent"),
+        "prompt": args.value("prompt"),
+        "baseBranch": args.value("base").or_else(|| args.value("base-branch")),
+        "host": args.value("host"),
+        "accountDir": args.value("account-dir"),
+        "openPane": args.has("open-pane"),
+        "workspaceStatus": args.value("status").or_else(|| args.value("workspace-status")),
+        "comment": args.value("comment").or_else(|| args.value("checkpoint")),
+        "displayName": args.value("display-name").or_else(|| args.value("name")),
+        "parentWorktree": args.value("parent").or_else(|| args.value("parent-worktree")),
+        "verifyCmd": args.value("verify"),
+        "cleanup": args.has("cleanup") || args.has("force"),
+        "json": args.has("json"),
+    });
+
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|d| d.to_path_buf()))
+        .unwrap_or_else(|| std::path::PathBuf::from("."));
+    let candidates = [
+        exe_dir.join("resources/worktree/cli.mjs"),
+        std::path::PathBuf::from("/root/.local/share/com.crux.desktop/runtime/xdg-config/opencode/worktree/cli.mjs"),
+        std::path::PathBuf::from("/root/sciencecowork/runtime/worktree/cli.mjs"),
+    ];
+    let script = candidates
+        .iter()
+        .find(|p| p.is_file())
+        .ok_or_else(|| "worktree CLI bundle (cli.mjs) not found".to_string())?;
+
+    let output = std::process::Command::new("node")
+        .arg(script)
+        .arg(payload.to_string())
+        .output()
+        .map_err(|e| format!("failed to run node for worktree CLI: {e}"))?;
+
+    if !output.status.success() {
+        let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        return Err(if err.is_empty() {
+            "worktree command failed".into()
+        } else {
+            err
+        });
+    }
+    let out = String::from_utf8_lossy(&output.stdout);
+    print!("{out}");
     Ok(())
 }
 
@@ -648,8 +739,8 @@ fn model_show(args: &Args) -> Result<(), String> {
     match model {
         Some(model) => println!("{model}"),
         None => println!(
-            "No default model. Set one with `osd model set <provider/model>`, or name it \
-             per turn with `osd session send --model`."
+            "No default model. Set one with `crux model set <provider/model>`, or name it \
+             per turn with `crux session send --model`."
         ),
     }
     Ok(())
@@ -664,7 +755,7 @@ fn model_ls(args: &Args) -> Result<(), String> {
     let client = Client::connect(args).map_err(|e| {
         format!(
             "{e}\nThe model list comes from the running agent runtime — start one with \
-             `osd server`, or set a model without listing: `osd model set <provider/model>`."
+             `crux server`, or set a model without listing: `crux model set <provider/model>`."
         )
     })?;
     // Chat models the runtime can run now, with their provider's name.
@@ -684,7 +775,7 @@ fn model_ls(args: &Args) -> Result<(), String> {
     }
     if by_provider.is_empty() {
         println!("No providers are configured on this machine.");
-        println!("Add one with `osd auth set <provider> --key <api-key>`.");
+        println!("Add one with `crux auth set <provider> --key <api-key>`.");
         return Ok(());
     }
     let current = client.get("/v1/opencode-config").ok().and_then(|c| {
@@ -719,7 +810,7 @@ fn model_set(args: &Args) -> Result<(), String> {
     if !model.contains('/') {
         return Err(format!(
             "a model is named provider/model — `{model}` has no provider. \
-             `osd model ls` lists what this machine can serve."
+             `crux model ls` lists what this machine can serve."
         ));
     }
     match Client::connect(args) {
@@ -746,7 +837,7 @@ fn model_set(args: &Args) -> Result<(), String> {
 /// remote access; "full" does not prompt at all.
 fn approval_show(args: &Args) -> Result<(), String> {
     if asked_about_a_remote(args) {
-        return Err(local_only_error("osd approval"));
+        return Err(local_only_error("crux approval"));
     }
     let env = crate::env(args)?;
     let mode = osd_core::runtime::get_approval_mode(&env)?;
@@ -760,8 +851,8 @@ fn approval_show(args: &Args) -> Result<(), String> {
         }
         _ => {
             println!("approve — commands, deletions, dependency installs and remote access");
-            println!("need an answer before the turn continues (`osd permission ls`).");
-            println!("On a machine with nobody watching, `osd approval set full` removes the wait.");
+            println!("need an answer before the turn continues (`crux permission ls`).");
+            println!("On a machine with nobody watching, `crux approval set full` removes the wait.");
         }
     }
     Ok(())
@@ -785,7 +876,7 @@ fn approval_set(args: &Args) -> Result<(), String> {
         }
     };
     if asked_about_a_remote(args) {
-        return Err(local_only_error("osd approval set"));
+        return Err(local_only_error("crux approval set"));
     }
     // With the desktop app open, the user decides, in its window: otherwise
     // any agent allowed to run `osd` could switch its own approvals off.
@@ -889,7 +980,7 @@ fn question_answer(args: &Args) -> Result<(), String> {
     let id = args.at(0, "question id")?;
     let answers: Vec<Vec<String>> = args.positional.iter().skip(1).map(|a| vec![a.clone()]).collect();
     if answers.is_empty() {
-        return Err("no answer: osd question answer <id> <answer> [<answer for the next question>…]".into());
+        return Err("no answer: crux question answer <id> <answer> [<answer for the next question>…]".into());
     }
     client.post(&format!("/v1/questions/{id}/reply{}", dir_query(&client, args)?), json!({ "answers": answers }))?;
     Ok(())
@@ -995,7 +1086,7 @@ fn turn_failed(err: &Value) -> String {
     if model_gone {
         format!(
             "the turn failed: {message}\nThat model is no longer served. Pick another with \
-             `osd model ls`, then `osd model set <provider/model>` (or `--model` on this send)."
+             `crux model ls`, then `crux model set <provider/model>` (or `--model` on this send)."
         )
     } else {
         format!("the turn failed: {message}")
@@ -1022,9 +1113,9 @@ mod tests {
         }});
         let out = turn_failed(&err);
         assert!(out.starts_with("the turn failed: Model longcat-2.5-preview-free has been deprecated."));
-        assert!(out.contains("osd model set"), "{out}");
+        assert!(out.contains("crux model set"), "{out}");
         let unsupported = json!({"data": {"message": "Model ling-3.0-flash-free is not supported"}});
-        assert!(turn_failed(&unsupported).contains("osd model ls"));
+        assert!(turn_failed(&unsupported).contains("crux model ls"));
     }
 
     #[test]

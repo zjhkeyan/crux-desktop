@@ -1,6 +1,6 @@
 [package]
 name = "osd-core"
-description = "Open Science Desktop — the server core: workspace, OpenCode sidecar, and gateway. No GUI, no Tauri."
+description = "Crux Desktop — the server core: workspace, OpenCode sidecar, and gateway. No GUI, no Tauri."
 version.workspace = true
 edition.workspace = true
 license.workspace = true

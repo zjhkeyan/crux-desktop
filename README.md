@@ -524,7 +524,7 @@ GitHub's **"Cite this repository"** button (top of the repo page, generated from
 
 [MIT](./LICENSE). Bundled third-party skills and connectors keep their own licenses.
 
-Computer use is a port of the design and native providers from [Orca](https://github.com/stablyai/orca) (MIT) — an accessibility-tree-first approach, with an explicit verified/unverified result on every action, that is simply the right way to build this. Our thanks to that team for doing it well and giving it away.
+Computer use is a port of the design and native providers from [Crux](https://github.com/ai4s-research/open-science) (MIT) — an accessibility-tree-first approach, with an explicit verified/unverified result on every action, that is simply the right way to build this. Our thanks to that team for doing it well and giving it away.
 
 > Open Science Desktop is beta research tooling. Treat outputs as drafts: verify numbers,
 > citations, code, and conclusions before publication or decision-making.

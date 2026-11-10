@@ -55,7 +55,7 @@
   },
   "page": {
     "title": "設定",
-    "subtitle": "ここでの設定はすべて、バンドルされた OpenCode ランタイムに対するものです — 設定は一つだけで、コピーはありません。"
+    "subtitle": "ここにあるすべての設定は内蔵エージェントランタイムに適用されます。設定は一元管理され、複製は不要です。"
   },
   "runtime": {
     "title": "ネットワーク",
@@ -83,8 +83,8 @@
     "mirrorPypiPlaceholder": "https://pypi.tuna.tsinghua.edu.cn/simple",
     "mirrorPythonPlaceholder": "https://mirror.example.com/python-build-standalone",
     "mirrorHint": "任意のミラー。Python ツール(Jupyter・科学データベース)のセットアップ時のダウンロードにのみ使用され、pypi.org / github.com が遅いネットワーク向けです。空欄でデフォルト。",
-    "serverTitle": "OpenCode サーバー",
-    "serverHint": "アプリが操作する OpenCode。内蔵のものは自動で起動します。自分の opencode serve を使う場合のみアドレスを入力してください。"
+    "serverTitle": "エージェントランタイムサーバー",
+    "serverHint": "アプリが操作するエージェントランタイムです。同梱のサービスは自動的に起動します。独自のランタイムサーバーを使用する場合のみ URL を入力してください。"
   },
   "acp": {
     "add": "エージェントを追加",
@@ -96,7 +96,7 @@
     "commandPlaceholder": "コマンド（npx、gemini など）",
     "argsLabel": "引数",
     "argsPlaceholder": "引数（-y @agentclientprotocol/codex-acp）",
-    "limits": "ACP エージェントはこのコンピューター上のコマンドとして、会話のフォルダーで OpenCode と並んで動作します。モデル、コマンド、履歴はエージェント自身が管理するため、モデル選択とプランモードは OpenCode の会話にのみ適用されます。"
+    "limits": "ACP エージェントは、このコンピューター上のコマンドとして、会話のフォルダーで内蔵ランタイムと並行して動作します。モデル、コマンド、履歴はエージェント自身が管理するため、モデル選択とプランモードは内蔵ランタイムの会話にのみ適用されます。"
   },
   "updates": {
     "title": "アプリの更新",
@@ -120,8 +120,8 @@
     "privacy": "公開 GitHub Releases API だけに接続します。ワークスペースのファイルや API キーは送信しません。"
   },
   "model": {
-    "title": "OpenCode の既定モデル",
-    "hint": "新しい OpenCode の会話で最初に使うモデル。選べるモデルは下のプロバイダーから提供されます。",
+    "title": "デフォルトモデル",
+    "hint": "新しい会話で最初に使うモデルです。下のモデルプロバイダーから選択できます。",
     "connectPrompt": "モデルを設定するには、ランタイムに接続してください。",
     "notSet": "未設定 — デフォルトモデルを選択",
     "providersDivider": "プロバイダー",
@@ -149,10 +149,10 @@
     "noProvidersHint": "下の Providers で接続してください。"
   },
   "providers": {
-    "title": "OpenCode のプロバイダー",
-    "hint": "認証、カスタムエンドポイント、インポートした OpenCode ログイン",
+    "title": "モデルプロバイダー",
+    "hint": "APIキー認証、カスタムエンドポイント、モデル設定",
     "webHint": "接続済みのプロバイダー — ブラウザからは読み取り専用",
-    "webNote": "API キーとカスタムエンドポイントは、ワークベンチを動かしているマシン上で設定します。デスクトップアプリ、またはウィンドウなしで動かしている場合は `osd auth set` を使います。認証情報がゲートウェイを通ることはありません。",
+    "webNote": "API キーとカスタムエンドポイントは、ワークベンチを動かしているマシン上で設定します。デスクトップアプリ、またはウィンドウなしで動かしている場合は `crux auth set` を使います。認証情報がゲートウェイを通ることはありません。",
     "connectPrompt": "プロバイダーを管理するにはランタイムに接続してください。",
     "manage": "管理",
     "collapse": "折りたたむ",
@@ -182,7 +182,7 @@
     "fetchingModels": "取得中…",
     "noModelsFound": "エンドポイントからモデルが返されませんでした。",
     "addEndpoint": "エンドポイントを追加",
-    "importLogin": "すでに OpenCode CLI を使っていますか？ そのログインをインポート",
+    "importLogin": "ローカル CLI のログイン情報をインポート",
     "addTitle": "プロバイダーを追加",
     "fieldName": "名前",
     "fieldApiStyle": "API 形式",
@@ -316,8 +316,8 @@
     "couldNotRemoveMcp": "MCP サーバーを削除できませんでした",
     "mcpRemoved": "MCP サーバー {{name}} を削除しました",
     "importFailed": "インポートに失敗しました",
-    "noOpenCodeLoginFound": "このマシンで OpenCode CLI のログインが見つかりませんでした。",
-    "importedLogin": "OpenCode CLI のログインをインポートしました。",
+    "noOpenCodeLoginFound": "このコンピューターにローカル CLI のログイン情報が見つかりません。",
+    "importedLogin": "ローカル CLI のログイン情報をインポートしました。",
     "couldNotSetProxy": "プロキシ設定を適用できませんでした",
     "proxyApplied": "プロキシ設定を適用しました",
     "mirrorSaved": "ミラー設定を保存しました",
@@ -357,7 +357,7 @@
   },
   "remoteCompute": {
     "title": "リモートコンピュート",
-    "subtitle": "SSH 経由で自分のサーバー上でジョブを実行 — CPU または GPU、Slurm はオプション。あなた自身の SSH 鍵を使用し、対象マシンには何もインストールされません。",
+    "subtitle": "Crux Link または SSH で自分のサーバーに CPU/GPU ジョブを実行。Slurm にも対応。",
     "unavailable": "デスクトップアプリで利用可能です。",
     "empty": "マシンがまだありません — 下に追加してください。",
     "hostPlaceholderWithHosts": "user@host — または ~/.ssh/config から選択（{{count}}）",
@@ -397,7 +397,12 @@
     "signedIn": "サインイン済み",
     "signOut": "切断",
     "signOutTitle": "このマシンとの共有接続を閉じる",
-    "sharingUnavailable": "パスワードかコードが必要ですが、これには OpenSSH の接続共有が必要です（Windows では利用できません）"
+    "sharingUnavailable": "この環境では Crux Link でパスワードと二要素認証を行ってください。",
+    "cruxLink": {
+      "connect": "Crux Link で接続（ウィザード）",
+      "hint": "Windows、macOS、Linux に対応。ホストの指紋を確認し、専用鍵を登録してサーバーを事前確認します。",
+      "close": "ウィザードを閉じる"
+    }
   },
   "remote": {
     "title": "リモートアクセス",
@@ -508,18 +513,18 @@
     }
   },
   "cli": {
-    "title": "ターミナルコマンド（osd）",
+    "title": "ターミナルコマンド（crux）",
     "hint": "ターミナルからこのワークベンチを使う——セッション、プロジェクト、ファイル、そして画面のないマシン向けのヘッドレスサーバー。アプリと一緒に入り、設定は不要です。",
-    "readyPath": "使えます——新しいターミナルで `osd` を実行してください。",
-    "readyProfile": "使えます——{{profile}} に追記しました。新しいターミナルで `osd` を実行してください。",
-    "readyEnvironment": "使えます——ユーザーの PATH に追加しました。新しいターミナルで `osd` を実行してください。",
+    "readyPath": "使えます——新しいターミナルで `crux` を実行してください。",
+    "readyProfile": "使えます——{{profile}} に追記しました。新しいターミナルで `crux` を実行してください。",
+    "readyEnvironment": "使えます——ユーザーの PATH に追加しました。新しいターミナルで `crux` を実行してください。",
     "unreachable": "インストール済みですが、PATH から届いていません。次の行をシェルの設定に追加してください：",
     "notInstalled": "未インストール。ボタンを押すか、アプリを再起動してください。",
-    "unavailable": "このビルドには osd コマンドが含まれていません。",
+    "unavailable": "このビルドには crux コマンドが含まれていません。",
     "occupied": "同じ名前で、このアプリが書いたものではないファイルがあります——先に名前を変えてください。",
     "install": "コマンドをインストール",
     "repair": "再インストール",
-    "error": "osd コマンドのインストールに失敗しました"
+    "error": "crux コマンドのインストールに失敗しました"
   },
   "memory": {
     "title": "メモリ",
@@ -539,15 +544,15 @@
     "disabledNote": "メモリはオフのため、このファイルは現在読み込まれていません。"
   },
   "agentModels": {
-    "title": "OpenCode のロールごとのモデルと推論強度",
-    "hint": "メインのロールは強いモデルで推論させ、レビューや探索のロールは速いモデルで動かし、それぞれの推論強度を設定します。",
+    "title": "エージェントの役割別モデルと推論強度",
+    "hint": "各エージェントの役割にモデルと推論強度を設定したり、カスタムの役割を追加したりできます。",
     "noModels": "モデルを選ぶにはプロバイダーを接続してください。",
     "followDefault": "デフォルトに従う",
     "modelFor": "{{agent}} のモデル",
     "defaultEffort": "既定の強度",
     "effortFor": "{{agent}} の推論の強度",
     "retiredOption": "{{model}} — 提供終了",
-    "primaryHint": "build と plan は送信したメッセージを実行します。ここで設定したモデルが適用されますが、会話内でモデルを選ぶとその会話でのみ優先されます。",
+    "primaryHint": "対話やタスクの委任に使う各エージェントの役割にモデルと推論強度を指定します。個別に設定しない役割は全体のモデル設定に従います。",
     "group": {
       "conversation": "会話するロール",
       "utility": "ワークベンチが内部で使うもの"
@@ -556,8 +561,23 @@
     "about": {
       "title": "最初のメッセージからセッション名を付けます。",
       "summary": "会話の短い要約を書きます。",
-      "compaction": "長い会話をコンテキスト長に収まるよう書き直します。"
-    }
+      "compaction": "長い会話をコンテキスト長に収まるよう書き直します。",
+      "build": "タスクを実行し、設定された権限に従ってツールを使用します。",
+      "plan": "要件を分析し、作業の計画を立てます。",
+      "general": "複雑な問題を調査し、複数段階のタスクを実行します。",
+      "explore": "コードベースを探索してファイルを見つけ、コードの仕組みを説明します。",
+      "reviewer": "ファイルを変更せずに、科学的厳密性、追跡可能性、再現性を確認します。",
+      "crux-run-doctor": "Crux の探索実行を診断し、実行内容を変更せずに修正案を提示します。",
+      "crux-task-author": "最適化の目標を、検証済みの Crux 探索タスクに変換します。",
+      "memory-curator": "セッション履歴・実験ログ・コーパスを抽出し、.openscience/memory/ と MEMORY.md に統合整理します。"
+    },
+    "roleName": "役割名",
+    "addRole": "役割を追加",
+    "customRole": "カスタムの役割",
+    "removeRole": "削除",
+    "resetRole": "リセット",
+    "removeRoleFor": "役割 {{agent}} を削除",
+    "resetRoleFor": "{{agent}} の設定をリセット"
   },
   "ssh": {
     "title": "{{host}} にサインイン",
@@ -608,13 +628,13 @@
     "opened": "権限設定のウィンドウを開きました。",
     "error": "コンピュータ操作",
     "accessibility": "アクセシビリティ",
-    "accessibilityHint": "必須。ヘルパーがアプリの画面を読み取り、操作できるようにします。許可はワークベンチ全体ではなく、独立したヘルパー Open Science Computer Use に与えられます。",
+    "accessibilityHint": "必須。ヘルパーがアプリの画面を読み取り、操作できるようにします。許可はワークベンチ全体ではなく、独立したヘルパー Crux Computer Use に与えられます。",
     "screenshots": "画面収録",
-    "screenshotsHint": "任意で、許可はヘルパーではなく Open Science 本体に与えます — macOS は画面収録を、要求を始めたアプリに帰属させるためです。グラフやキャンバスなど、テキストとして読めないウィンドウを見る必要があるときだけ必要です。"
+    "screenshotsHint": "任意で、許可はヘルパーではなく Crux 本体に与えます — macOS は画面収録を、要求を始めたアプリに帰属させるためです。グラフやキャンバスなど、テキストとして読めないウィンドウを見る必要があるときだけ必要です。"
   },
   "userBrowser": {
     "title": "あなたが入れたブラウザ",
-    "hint": "この Mac に、Open Science のエージェントがシェルから操作できるブラウザが見つかりました。設定する項目はありません — 到達できるという事実をお知らせするための欄です。",
+    "hint": "この Mac に、Crux のエージェントがシェルから操作できるブラウザが見つかりました。設定する項目はありません — 到達できるという事実をお知らせするための欄です。",
     "name": "ego lite",
     "reachable": "インストール済みで利用可能。会話ごとに最初の使用前へ確認を求めます。",
     "notReachable": "インストールされていますが、このマシンにコマンドラインツールがないためエージェントからは届きません。ego lite 自身のセットアップを実行してください。",

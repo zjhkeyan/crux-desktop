@@ -16,6 +16,18 @@ import { applyBrowserLease } from "./browser";
 import { ShellOrigins } from "./origin";
 import { computerTool, runComputer } from "./computer";
 import { sshConnect, sshConnectTool } from "./ssh";
+import { runWorktree, worktreeTool } from "./worktree";
+import {
+  cruxDiscoveryTool,
+  cruxEvolveTool,
+  memoryDreamTool,
+  runCruxDiscovery,
+  runCruxEvolve,
+  runMemoryDream,
+  runSciResearch,
+  sciResearchTool,
+} from "./research-tools";
+import { loadWorkspaceMemorySystemPrompt } from "./memory";
 
 type ToolContext = {
   sessionID: string;
@@ -55,6 +67,41 @@ export default Plugin.define({
         }),
       });
       editor.add({
+        ...worktreeTool,
+        options: { codemode: false },
+        execute: async (input: Record<string, unknown>, context: ToolContext) => ({
+          content: await runWorktree(await workspaceOf(context.sessionID), input),
+        }),
+      });
+      editor.add({
+        ...sciResearchTool,
+        options: { codemode: false },
+        execute: async (input: Record<string, unknown>, context: ToolContext) => ({
+          content: await runSciResearch(await workspaceOf(context.sessionID), input),
+        }),
+      });
+      editor.add({
+        ...cruxDiscoveryTool,
+        options: { codemode: false },
+        execute: async (input: Record<string, unknown>, context: ToolContext) => ({
+          content: await runCruxDiscovery(await workspaceOf(context.sessionID), input),
+        }),
+      });
+      editor.add({
+        ...memoryDreamTool,
+        options: { codemode: false },
+        execute: async (input: Record<string, unknown>, context: ToolContext) => ({
+          content: await runMemoryDream(await workspaceOf(context.sessionID), input),
+        }),
+      });
+      editor.add({
+        ...cruxEvolveTool,
+        options: { codemode: false },
+        execute: async (input: Record<string, unknown>, context: ToolContext) => ({
+          content: await runCruxEvolve(await workspaceOf(context.sessionID), input),
+        }),
+      });
+      editor.add({
         ...computerTool,
         options: { codemode: false },
         execute: async (input: Record<string, unknown>, context: ToolContext) => {
@@ -77,8 +124,48 @@ export default Plugin.define({
       });
     });
 
-    await ctx.session.hook("context", (event: any) => {
+    // Isolate the scientific workbench from host-level developer/coding-agent
+    // skills (`~/.agents/skills`, `~/.claude/skills`), OpenCode internal
+    // meta-skills (`/builtin/opencode.md`, `/builtin/report.md`), and retired
+    // overlapping skill IDs so sessions only see curated scientific skills.
+    const RETIRED_SKILL_IDS = new Set([
+      "opencode",
+      "report",
+      "literature-survey",
+      "integrity-auditor",
+      "crux-quickstart",
+      "setting-up-crux",
+      "creating-a-crux-task",
+      "running-crux-experiments",
+      "ai4s-agent",
+      "research-explorer",
+      "experiment-suite",
+    ]);
+    if (ctx.skill && typeof ctx.skill.transform === "function") {
+      await ctx.skill.transform((editor: any) => {
+        const list = typeof editor?.list === "function" ? editor.list() : [];
+        for (const skill of list) {
+          const id = String(skill?.id ?? "");
+          const skillPath = String(skill?.path ?? "");
+          if (
+            RETIRED_SKILL_IDS.has(id) ||
+            skillPath.startsWith("/builtin/") ||
+            skillPath.includes("/.agents/skills/") ||
+            skillPath.includes("/.claude/skills/")
+          ) {
+            editor.remove(id);
+          }
+        }
+      });
+    }
+
+    await ctx.session.hook("context", async (event: any) => {
       event.system.push({ type: "text", text: ARTIFACT_PRESENTATION_SYSTEM });
+      const dir =
+        typeof event?.sessionID === "string" && event.sessionID
+          ? await workspaceOf(event.sessionID).catch(() => null)
+          : null;
+      event.system.push({ type: "text", text: loadWorkspaceMemorySystemPrompt(dir) });
     });
 
     // A shell command's session is known to the tool call, not to the shell it

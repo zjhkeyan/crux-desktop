@@ -6,6 +6,7 @@ Scientific skills, layered:
 skills/
   core/      # self-authored skills specific to this app (traceability-review;
              # other dirs are roadmap placeholders until they get a SKILL.md)
+  crux/      # Crux discovery task authoring and experiment workflows (skills-crux/)
   external/  # third-party skill packs, fetched by script — git-ignored
   user/      # user-installed / custom skills (live in the runtime workspace)
 ```
@@ -53,6 +54,15 @@ as `skills-agent-browser/`, and deploys it as `open-science-browser`. This keeps
 the browser workflow version-matched without copying an upstream guide into git.
 While the connector is configured, the runtime hides the unrelated legacy
 `browser-control` user skill so OpenCode cannot select the wrong transport.
+
+## Crux discovery skills and expert agents
+
+`crux/` bundles the four Crux discovery skills as `skills-crux/`: `crux-quickstart`,
+`setting-up-crux`, `creating-a-crux-task`, and `running-crux-experiments`.
+They deploy to the same app-private skills directory on every sidecar start.
+The `crux-task-author` and `crux-run-doctor` subagents ship with the OpenCode
+profile. Crux maintains the `crux-opencode` binding automatically so the discovery
+engine uses the bundled runtime and the active model without copying credentials.
 
 ## Third-party skills
 

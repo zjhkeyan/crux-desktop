@@ -10,6 +10,7 @@ import type {
   DataTableBlock,
   HistoryRepairBlock,
   MessageUsage,
+  ReasoningBlock,
   RunningJobsBlock,
   StatusLineBlock,
   UserMessageBlock,
@@ -445,6 +446,33 @@ export const RunningJobsOverlay = memo(function RunningJobsOverlay({
         ))}
       </ul>
     </div>
+  );
+});
+
+// The model's thinking: dimmed, monospace-free, and collapsible, so it reads as
+// deliberation rather than as something the model SAID. Open by default — the
+// point of keeping it is that the reader can follow the run without a click.
+export const ReasoningBlockView = memo(function ReasoningBlockView({
+  block,
+  defaultOpen = true,
+}: {
+  block: ReasoningBlock;
+  defaultOpen?: boolean;
+}) {
+  const { t } = useTranslation("session");
+  const firstLine = block.text.trim().split("\n")[0]?.slice(0, 80) ?? "";
+  return (
+    <details open={defaultOpen} data-reasoning className="group">
+      <summary className="flex cursor-pointer select-none items-center gap-1.5 text-xs text-muted hover:text-text">
+        <span className="shrink-0">💭 {t("message.reasoning")}</span>
+        {firstLine && (
+          <span className="truncate text-muted/70 group-open:hidden">· {firstLine}</span>
+        )}
+      </summary>
+      <div className="mt-1 max-h-48 overflow-y-auto whitespace-pre-wrap rounded-r-md border-l-2 border-accent/40 bg-surface-2/50 px-3 py-2 text-xs text-muted">
+        {block.text}
+      </div>
+    </details>
   );
 });
 

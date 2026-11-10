@@ -1,10 +1,14 @@
+import { fileURLToPath } from "node:url";
+
+const here = (rel) => fileURLToPath(new URL(rel, import.meta.url));
+
 /** A theme colour variable that still honours `/NN` opacity modifiers. */
 const token = (name) => `color-mix(in srgb, var(${name}) calc(<alpha-value> * 100%), transparent)`;
 
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: ["selector", '[data-theme="dark"]'],
-  content: ["./index.html", "./src/**/*.{ts,tsx}"],
+  content: [here("./index.html"), here("./src/**/*.{ts,tsx}")],
   theme: {
     extend: {
       // Each token takes an opacity modifier (`bg-surface/95`, `bg-accent/15`).

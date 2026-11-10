@@ -43,6 +43,14 @@ fn agent_name(kind: &str) -> String {
     match kind {
         "claude" => "Claude Code".into(),
         "codex" => "Codex".into(),
+        "opencode" => "OpenCode".into(),
+        "grok" => "Grok".into(),
+        "gemini" => "Gemini".into(),
+        "cursor" => "Cursor".into(),
+        "copilot" => "GitHub Copilot".into(),
+        "pi" => "pi".into(),
+        "dsh" => "DeepSeek Harness".into(),
+        "antigravity" => "Antigravity".into(),
         other => other.into(),
     }
 }
@@ -203,8 +211,11 @@ pub fn screen_new(args: &Args) -> Result<(), String> {
     for _ in 0..count(args, "terminals", 0)? {
         panes.push(json!({ "terminal": { "cwd": dir, "command": args.value("run") } }));
     }
+    if let Some(run_dir) = args.value("discovery").filter(|s| !s.trim().is_empty()) {
+        panes.push(json!({ "discovery": { "runDir": run_dir } }));
+    }
     if panes.is_empty() {
-        return Err("nothing to put on it: osd screen new [SESSION_ID…] [--sessions N] [--terminals N]".into());
+        return Err("nothing to put on it: crux screen new [SESSION_ID…] [--sessions N] [--terminals N] [--discovery RUN_DIR]".into());
     }
     let mut body = json!({ "panes": panes });
     if let Some(name) = args.value("name") {
@@ -220,9 +231,12 @@ pub fn screen_new(args: &Args) -> Result<(), String> {
     }
     println!("Screen {}", made["id"].as_str().unwrap_or("?"));
     for (id, p) in made["panes"].as_array().into_iter().flatten().zip(&panes) {
-        match p["session"].as_str() {
-            Some(s) => println!("    session   {s}"),
-            None => println!("    terminal  {}", id.as_str().unwrap_or("?")),
+        if let Some(s) = p["session"].as_str() {
+            println!("    session   {s}");
+        } else if let Some(d) = p["discovery"]["runDir"].as_str() {
+            println!("    discovery {}  {d}", id.as_str().unwrap_or("?"));
+        } else {
+            println!("    terminal  {}", id.as_str().unwrap_or("?"));
         }
     }
     Ok(())
@@ -263,21 +277,26 @@ pub fn screen_add(args: &Args) -> Result<(), String> {
     };
     // New conversations and terminals start where the caller works.
     let dir = folder(&client, args)?.or(my_dir);
-    let pane = if args.has("terminal") {
+    let pane = if let Some(run_dir) = args.value("discovery").filter(|s| !s.trim().is_empty()) {
+        json!({ "discovery": { "runDir": run_dir } })
+    } else if args.has("terminal") {
         json!({ "terminal": { "cwd": dir, "command": args.value("run") } })
     } else if args.has("new") {
         json!({ "session": new_session_in(&client, &dir)?["id"] })
     } else {
-        json!({ "session": args.at(first, "session id (or --new, or --terminal)")? })
+        json!({ "session": args.at(first, "session id (or --new, --terminal, or --discovery <dir>)")? })
     };
     let mut body = pane.clone();
     if let Some(b) = &beside {
         body["beside"] = json!(b);
     }
     let added = client.post(&format!("/v1/screens/{screen}/panes"), body)?;
-    match pane["session"].as_str() {
-        Some(s) => println!("session   {s}"),
-        None => println!("terminal  {}", added["pane"].as_str().unwrap_or("?")),
+    if let Some(s) = pane["session"].as_str() {
+        println!("session   {s}");
+    } else if let Some(d) = pane["discovery"]["runDir"].as_str() {
+        println!("discovery {}  {d}", added["pane"].as_str().unwrap_or("?"));
+    } else {
+        println!("terminal  {}", added["pane"].as_str().unwrap_or("?"));
     }
     Ok(())
 }
@@ -372,7 +391,7 @@ pub fn term_send(args: &Args) -> Result<(), String> {
     let id = args.at(0, "terminal id")?;
     let text = args.rest(1);
     if text.trim().is_empty() {
-        return Err("nothing to send: osd term send <id> <text…>".into());
+        return Err("nothing to send: crux term send <id> <text…>".into());
     }
     let wait = args.has("wait");
     if wait && read(&client, &id, 1, 1)?["kind"] != "agent" {
@@ -405,7 +424,7 @@ pub fn term_send(args: &Args) -> Result<(), String> {
         }
         if Instant::now() > deadline {
             return Err(format!(
-                "no reply within {timeout}s — it may still be working; read it later with `osd term read {id}`"
+                "no reply within {timeout}s — it may still be working; read it later with `crux term read {id}`"
             ));
         }
         std::thread::sleep(interval);
@@ -443,7 +462,7 @@ pub fn term_key(args: &Args) -> Result<(), String> {
     let names = args.rest(1);
     let names: Vec<&str> = names.split_whitespace().collect();
     if names.is_empty() {
-        return Err("no keys: osd term key <id> <key…> (up down left right enter esc tab shift-tab space backspace ctrl-c ctrl-d, or one character)".into());
+        return Err("no keys: crux term key <id> <key…> (up down left right enter esc tab shift-tab space backspace ctrl-c ctrl-d, or one character)".into());
     }
     // Check every name first: half a key sequence pressed is worse than none.
     let keys = names

@@ -8,7 +8,7 @@ describe('computerProviderUnavailableMessage', () => {
       'run scripts/dev/build-computer-use.sh and restart the app'
     )
     expect(computerProviderUnavailableMessage('darwin')).toContain(
-      'Open Science Computer Use.app was not found or this macOS version is unsupported'
+      'Crux Computer Use.app was not found or this macOS version is unsupported'
     )
   })
 

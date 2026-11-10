@@ -32,7 +32,7 @@ export const SETTINGS_SECTIONS = [
   // Driving the apps on THIS machine: native permission state and a
   // helper window, neither of which the gateway can reach.
   { key: "computer", icon: IconBrowseOutlineRegular, desktopOnly: true },
-  { key: "compute", icon: IconGaugeOutlineRegular, desktopOnly: true },
+  { key: "compute", icon: IconGaugeOutlineRegular },
   { key: "remote", icon: IconLinkOutlineRegular, desktopOnly: true },
   { key: "privacy", icon: IconShieldOutlineRegular },
 ] as const satisfies ReadonlyArray<{ key: string; icon: ComponentType<IconProps>; desktopOnly?: boolean }>;

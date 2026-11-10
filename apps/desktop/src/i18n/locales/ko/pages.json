@@ -69,7 +69,7 @@
   },
   "skills": {
     "title": "스킬 & 에이전트",
-    "subtitle": "에이전트가 사용할 수 있는 모든 기능을 OpenCode에서 실시간으로 불러옵니다.",
+    "subtitle": "에이전트가 사용할 수 있는 모든 기능을 런타임에서 실시간으로 불러옵니다.",
     "install": {
       "sectionTitle": "스킬 설치",
       "placeholder": "SKILL.md를 붙여넣거나, 에이전트가 스킬로 만들 URL / 설명을 붙여넣으세요",
@@ -88,7 +88,7 @@
       "found": "발견됨",
       "notFound": "찾을 수 없음",
       "appManaged": "앱 관리",
-      "note": "OpenCode는 여기에 설치된 것을 사용해 코드를 실행합니다 (예: 셸 도구를 통한 Python). uv는 앱에 포함되어 있고, Jupyter는 설정 → 커넥터에서 앱이 관리할 수 있습니다. Python과 R은 기본 포함되지 않으므로, 분석을 사용하려면 이를 설치하거나 Science Pack을 설치하세요."
+      "note": "에이전트 런타임은 여기에 설치된 구성 요소로 코드를 실행합니다(예: 셸 도구를 통해 Python 호출). uv는 앱에 포함되어 있으며, Jupyter는 설정 → 커넥터에서 앱이 관리할 수 있습니다. Python과 R은 포함되어 있지 않습니다. 분석 기능을 사용하려면 직접 설치하거나 Science Pack을 설치하세요."
     },
     "agentsSection": {
       "heading": "에이전트",

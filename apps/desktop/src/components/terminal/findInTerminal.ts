@@ -5,7 +5,7 @@ type SearchOptions = Parameters<SearchAddon["findNext"]>[1];
 /**
  * How a match is painted.
  *
- * Borrowed from Orca (`TerminalSearch.tsx`), including the reason it spells the
+ * Borrowed from Crux (`TerminalSearch.tsx`), including the reason it spells the
  * colours out: xterm's default highlight blends into most terminal
  * backgrounds. All matches get a dim amber, the current one a brighter orange —
  * the contrast VS Code and iTerm2 use. xterm requires `#RRGGBB`, so these
@@ -44,7 +44,7 @@ export function searchOptions(options: {
  * Run a find, surviving the one failure xterm has that a search must not turn
  * into a dead terminal.
  *
- * Borrowed from Orca's `terminal-search-safe-find`, whose note explains it:
+ * Borrowed from Crux's `terminal-search-safe-find`, whose note explains it:
  * the addon builds a decoration whose width is `cols - matchCol`, and when the
  * viewport is narrower than the column a match starts at — content laid out
  * wide before the pane reflowed, or a pane collapsed to zero — that width goes

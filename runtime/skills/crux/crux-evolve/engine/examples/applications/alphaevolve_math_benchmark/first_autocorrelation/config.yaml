@@ -1,0 +1,87 @@
+project_name: alphaevolve_first_autocorrelation
+path_resolution: cwd
+description_en: Evolve a non-negative step function that minimizes the first autocorrelation upper bound.
+description_zh: 进化非负阶梯函数，最小化第一自相关不等式上界。
+random_seed: 42
+background: |
+  Minimize the first-autocorrelation upper bound of a step sequence.
+  Implement search_for_best_sequence(), returning a nonempty finite real sequence.
+  The length N is selectable. The fixed wrapper converts the sequence to a list;
+  evaluate_sequence() and run_search_for_best_sequence() are fixed and must not
+  be redefined or edited. For scoring, each height is clipped to [0,1000]. Let a
+  be the clipped sequence and c = numpy.convolve(a,a). Its sum must be at least
+  0.01. The raw objective is U = 2*N*max(c)/(sum(a)**2); smaller is better.
+  Return the sequence itself, not U. The evaluator recomputes U independently.
+  Implement optimization helpers inside the marked block when needed.
+providers:
+- name: default
+  type: openai_compatible
+  base_url: ${LLM_BASE_URL}
+  api_key: ${LLM_API_KEY}
+  model: ${LLM_MODEL}
+  temperature: 1.0
+  max_tokens: 8192
+  timeout: 600.0
+coder:
+  type: custom
+  provider: default
+  temperature: 1.0
+  timeout: 600.0
+  max_retries: 2
+  max_gen_tokens: 4096
+  context_max_tokens: 8192
+  default_extension: py
+  prompt_template: Implement the experiment task exactly as specified in the problem background. Improve
+    only the EVOLVE_START/EVOLVE_END block in solve.py. Preserve run_search_for_best_sequence(), evaluate_sequence(),
+    and the final JSON adapter used by the platform.
+planner:
+  type: llm_evolution
+  provider: default
+  selection_strategy: weighted
+  parent_selection_strategy: tournament
+  build:
+    script: {}
+  samplers:
+  - name: init_sampler
+  - name: mutation_sampler
+  - name: crossover_sampler
+evaluator:
+  type: custom
+  module: first_autocorrelation/evaluator.py:FirstAutocorrelationEvaluator
+  timeout: 1200.0
+  max_retries: 0
+  parallel: true
+  batch_size: 5
+  metrics:
+  - upper_bound
+  - target_ratio
+  - validity
+  - eval_time
+evolution:
+  type: island_ga
+  max_generations: 20
+  early_stop_patience: 21
+  checkpoint_interval: 5
+  elite_ratio: 0.2
+  mutation_rate: 0.3
+  crossover_rate: 0.5
+  num_islands: 3
+  island_population_size: 5
+  migration_interval: 3
+  migration_rate: 0.2
+  parallel_islands: true
+version_control:
+  enabled: true
+  type: git_worktree
+  local_path: first_autocorrelation/algorithm
+  auto_initialize: true
+  auto_cleanup: true
+  default_branch: main
+repo_analyzer:
+  type: evolve_detector
+  include:
+  - '*.py'
+  exclude:
+  - .git/**
+  - __pycache__/**
+  - '*.pyc'

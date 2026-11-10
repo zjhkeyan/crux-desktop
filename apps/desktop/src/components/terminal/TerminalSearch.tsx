@@ -8,7 +8,7 @@ import { clearSearch, queryIsUsable, safeFind, searchOptions } from "./findInTer
 /**
  * Find in a terminal — ⌘F / Ctrl+F.
  *
- * Borrowed from Orca's `TerminalSearch`, down to its two hard-won details (see
+ * Borrowed from Crux's `TerminalSearch`, down to its two hard-won details (see
  * `findInTerminal.ts`): explicit decoration colours, because xterm's defaults
  * vanish into a terminal background, and a guarded `find`, because the addon
  * can throw while building a highlight and take the pane down with it.

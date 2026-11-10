@@ -10,7 +10,6 @@ import {
   Minus,
   NotebookPen,
   Plus,
-  RefreshCw,
   Search,
 } from "lucide-react";
 import type {
@@ -27,7 +26,6 @@ import { useParams } from "react-router-dom";
 import { useUiStore, ZOOM_MAX, ZOOM_MIN } from "@/lib/store";
 import { shippedLocales } from "@/i18n/config";
 import { getClient, useRuntimeStore } from "@/lib/runtime";
-import { useUpdateStore } from "@/lib/update";
 import {
   agentBrowserProfiles,
   closeAgentBrowser,
@@ -60,7 +58,7 @@ import {
   type ProbedModel,
 } from "@/lib/tauri";
 import { useSetupStore } from "@/lib/setup";
-import { isGatewayWeb } from "@/lib/webMode";
+import { isGatewayWeb, signedInAccount } from "@/lib/webMode";
 import { customProviderId } from "@/lib/customProviderId";
 import { listProvidersWithAvailability } from "@/lib/zenModels";
 import { RemoteComputeCard } from "@/components/settings/RemoteComputeCard";
@@ -192,28 +190,6 @@ function SettingsPageContent() {
   const stallGuard = useRuntimeStore((s) => s.stallGuard);
   const setStallGuard = useRuntimeStore((s) => s.setStallGuard);
   const connected = status === "ready";
-  const updateEnabled = useUpdateStore((s) => s.enabled);
-  const setUpdateEnabled = useUpdateStore((s) => s.setEnabled);
-  const updateBadgeEnabled = useUpdateStore((s) => s.badgeEnabled);
-  const setUpdateBadgeEnabled = useUpdateStore((s) => s.setBadgeEnabled);
-  const updateStatus = useUpdateStore((s) => s.status);
-  const updateError = useUpdateStore((s) => s.error);
-  const currentVersion = useUpdateStore((s) => s.currentVersion);
-  const latestUpdate = useUpdateStore((s) => s.latest);
-  const hasUpdate = useUpdateStore((s) => s.hasUpdate);
-  const showUpdateBadge = useUpdateStore((s) => s.showBadge);
-  const lastCheckedAt = useUpdateStore((s) => s.lastCheckedAt);
-  const checkForUpdates = useUpdateStore((s) => s.check);
-  const dismissUpdateBadge = useUpdateStore((s) => s.dismissBadge);
-  const updateTone =
-    hasUpdate || updateStatus === "error" ? "error" : updateStatus === "checking" ? "accent" : "ok";
-  const updateLabel = hasUpdate
-    ? t("updates.available")
-    : updateStatus === "checking"
-      ? t("updates.checking")
-      : updateStatus === "error"
-        ? t("updates.failed")
-        : t("updates.upToDate");
 
   // Long-running uv provisioning lives in a store, not here: navigating away
   // must not discard the "setting up…" state or sever the progress stream.
@@ -1130,12 +1106,14 @@ function SettingsPageContent() {
         {section === "memory" && <MemoryCard />}
 
         {/* ---- Providers ---- */}
-        {section === "agents" && (
+        {section === "agents" && (() => {
+          const isReadOnlyWebAccount = isGatewayWeb && Boolean(signedInAccount());
+          return (
         <ProviderManagerCard
           providers={providers}
-          // The web client can only read this surface, so say so up front
-          // instead of describing writes it cannot make (#119).
-          hint={isGatewayWeb ? t("providers.webHint") : undefined}
+          // Guest web accounts can only read this surface; the owner token can
+          // configure providers, API keys, and custom endpoints in the browser.
+          hint={isReadOnlyWebAccount ? t("providers.webHint") : undefined}
         >
           {!connected ? (
             <p className="px-4 py-3 text-[13px] text-muted">{t("providers.connectPrompt")}</p>
@@ -1164,7 +1142,7 @@ function SettingsPageContent() {
                       <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted ring-1 ring-border">
                         {t("providers.builtInFree")}
                       </span>
-                    ) : isGatewayWeb ? null : (
+                    ) : isReadOnlyWebAccount ? null : (
                       <button
                         className="text-xs text-muted transition-colors hover:text-error"
                         onClick={() => void disconnectProvider(p.id)}
@@ -1177,10 +1155,9 @@ function SettingsPageContent() {
                   </div>
                 ))}
 
-                {isGatewayWeb ? (
-                  /* Every write here is refused by the gateway by design —
-                     API keys and provider config never cross the wire — so the
-                     web client shows what is connected and says where to change
+                {isReadOnlyWebAccount ? (
+                  /* Guest web accounts cannot modify host credentials —
+                     the web client shows what is connected and says where to change
                      it, instead of forms that 403 on submit (#119). */
                   <p
                     className={cn(
@@ -1423,7 +1400,7 @@ function SettingsPageContent() {
                           />
                           {/* Beside the field it fills, not stranded next to the
                               context window it has nothing to do with. */}
-                          {isTauri && (
+                          {(isTauri || !isReadOnlyWebAccount) && (
                             <button
                               className={btnGhost("shrink-0")}
                               onClick={() => void fetchCustomModels()}
@@ -1499,12 +1476,15 @@ function SettingsPageContent() {
             </>
           )}
         </ProviderManagerCard>
-        )}
+          );
+        })()}
 
         {/* ---- One model per agent (a fast reviewer, a strong main agent) ----
              After Providers on purpose: those supply the models these rows pick
              from, so a reader meets the supply before the assignment. */}
-        {section === "agents" && isTauri && <AgentModelsCard providers={providers} />}
+        {section === "agents" && (isTauri || !(isGatewayWeb && Boolean(signedInAccount()))) && (
+          <AgentModelsCard providers={providers} />
+        )}
 
         {/* ---- OpenCode: the server the app drives ---- */}
         {section === "agents" && (
@@ -1534,7 +1514,7 @@ function SettingsPageContent() {
                   {isTauri && (
                     <>
                       <span className="text-border">·</span>
-                      <span className="font-mono">{`OpenCode ${OPENCODE_VERSION}`}</span>
+                        <span className="font-mono">{`Runtime ${OPENCODE_VERSION}`}</span>
                     </>
                   )}
                 </span>
@@ -2289,97 +2269,6 @@ function SettingsPageContent() {
                 }
               />
             )}
-          </div>
-        </Section>
-        )}
-
-        {/* ---- App updates ---- */}
-        {section === "general" && (
-        <Section title={t("updates.title")} hint={t("updates.hint")} flush>
-          <div className="divide-y divide-faint">
-            <Row
-              title={
-                <span className="inline-flex items-center gap-1.5">
-                  <span
-                    className={cn(
-                      "h-1.5 w-1.5 rounded-full",
-                      updateTone === "error" ? "bg-error" : updateTone === "accent" ? "bg-accent" : "bg-ok",
-                    )}
-                  />
-                  {updateLabel}
-                </span>
-              }
-              hint={[
-                t("updates.currentVersion", { version: currentVersion }),
-                latestUpdate && t("updates.latestVersion", { version: latestUpdate.version }),
-                latestUpdate?.publishedAt &&
-                  t("updates.publishedAt", {
-                    date: new Date(latestUpdate.publishedAt).toLocaleString(locale),
-                  }),
-                lastCheckedAt &&
-                  t("updates.lastChecked", { date: new Date(lastCheckedAt).toLocaleString(locale) }),
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-              control={
-                <div className="flex shrink-0 flex-wrap justify-end gap-2">
-                  <button
-                    className={btnGhost("gap-1.5")}
-                    onClick={() => void checkForUpdates({ manual: true })}
-                    disabled={updateStatus === "checking"}
-                  >
-                    {updateStatus === "checking" ? (
-                      <Loader2 size={13} className="animate-spin" />
-                    ) : (
-                      <RefreshCw size={13} />
-                    )}
-                    {t("updates.checkNow")}
-                  </button>
-                  {latestUpdate?.url && (
-                    <button
-                      className={btnGhost("gap-1.5")}
-                      onClick={() => void openExternal(latestUpdate.url)}
-                    >
-                      <ExternalLink size={13} /> {t("updates.openRelease")}
-                    </button>
-                  )}
-                  {showUpdateBadge && (
-                    <button className={btnGhost()} onClick={dismissUpdateBadge}>
-                      {t("updates.hideBadge")}
-                    </button>
-                  )}
-                </div>
-              }
-            >
-              {updateStatus === "error" && updateError && (
-                <div className="mt-2 text-xs text-error">
-                  {t("updates.checkFailed", { message: updateError })}
-                </div>
-              )}
-            </Row>
-            <Row
-              title={t("updates.autoCheck")}
-              hint={t("updates.autoCheckHint")}
-              control={
-                <Switch
-                  checked={updateEnabled}
-                  onChange={setUpdateEnabled}
-                  label={t("updates.autoCheck")}
-                />
-              }
-            />
-            <Row
-              title={t("updates.showBadge")}
-              hint={t("updates.showBadgeHint")}
-              control={
-                <Switch
-                  checked={updateBadgeEnabled}
-                  onChange={setUpdateBadgeEnabled}
-                  label={t("updates.showBadge")}
-                />
-              }
-            />
-            <div className="px-4 py-3 text-xs leading-relaxed text-muted">{t("updates.privacy")}</div>
           </div>
         </Section>
         )}

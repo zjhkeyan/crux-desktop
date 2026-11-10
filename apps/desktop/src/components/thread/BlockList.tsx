@@ -7,6 +7,7 @@ import {
   AgentMessage,
   DataTable,
   HistoryRepair,
+  ReasoningBlockView,
   RunningJobsOverlay,
   StatusLine,
   UserMessage,
@@ -52,9 +53,7 @@ export function renderBlock(
   block: ThreadBlock,
   i: number,
   handlers?: BlockHandlers,
-  /** Unused. Kept so the positional signature two test files call stays put;
-   *  thinking is shown live on the status row and never rendered here. */
-  _unusedLiveReasoning?: undefined,
+  latestReasoning?: ThreadBlock,
   workspaceDirectory?: string,
   contextLimit?: number,
 ) {
@@ -84,10 +83,13 @@ export function renderBlock(
         />
       );
     case "reasoning":
-      // Thinking is shown live beside "Working…" and never kept — `dropReasoning`
-      // removes these before they reach here. This arm stays only because the
-      // switch is exhaustive over the block union.
-      return null;
+      return (
+        <ReasoningBlockView
+          key={i}
+          block={block}
+          defaultOpen={!latestReasoning || block === latestReasoning}
+        />
+      );
     case "step-summary":
       return <StepSummaryRow key={i} block={block} />;
     case "tool-call":
@@ -130,8 +132,8 @@ export function renderBlock(
 // per-block memo above ensures only the touched rows actually re-render (#34).
 // Requires callers to pass a stable `handlers` reference (see LiveSessionPage).
 /** The thread as BlockList renders it: scratch files dropped (the answer
- *  already chips them) and reasoning dropped. Shared with the turn navigator,
- *  so its marks line up one-to-one with the rendered turns. */
+ *  already chips them) and empty reasoning dropped. Shared with the turn
+ *  navigator, so its marks line up one-to-one with the rendered turns. */
 export function shapeThread(blocks: ThreadBlock[]): ThreadBlock[] {
   return dropReasoning(dropProcessArtifacts(blocks));
 }
@@ -167,13 +169,20 @@ export const BlockList = memo(function BlockList({
   // compared by identity below. An index would point at whatever shifted into
   // that slot — silently, since a wrong index is still a valid one.
   const shaped = shapeThread(blocks);
+  let latestReasoning: ThreadBlock | undefined;
+  for (let i = shaped.length - 1; i >= 0; i--) {
+    if (shaped[i].kind === "reasoning") {
+      latestReasoning = shaped[i];
+      break;
+    }
+  }
   // Paths in answers are also looked for next to the files and folders the
   // conversation has touched. Keyed by content, so streaming text does not
   // hand every link a new list to look up again.
   const anchorsKey = threadAnchors(blocks).join("\n");
   const anchors = useMemo(() => (anchorsKey ? anchorsKey.split("\n") : undefined), [anchorsKey]);
   const renderOne = (block: ThreadBlock, key: number) =>
-    renderBlock(block, key, handlers, undefined, workspaceDirectory, contextLimit);
+    renderBlock(block, key, handlers, latestReasoning, workspaceDirectory, contextLimit);
   const renderRun = (run: ThreadBlock[], offset: number) =>
     groupToolBlocks(run).map((item) =>
       item.kind === "group" ? (

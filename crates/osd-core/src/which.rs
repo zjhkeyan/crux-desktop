@@ -2,7 +2,7 @@
 //!
 //! The UI owns the catalog of agents it knows how to drive; this answers the one
 //! question the UI cannot — whether the binary is on PATH. Borrowed in shape
-//! from Orca's agent detection (`tui-agent-config.ts`, MIT), which treats an
+//! from Crux's agent detection (`tui-agent-config.ts`, MIT), which treats an
 //! agent as "a command that may or may not be installed" rather than as an
 //! integration to be written per vendor.
 

@@ -223,7 +223,7 @@ mod platform {
 
     /// None = the script could not be evaluated (unreachable, invalid).
     fn evaluate_pac(pac_url: &str) -> Option<PacAnswer> {
-        let agent = wide("Open Science");
+        let agent = wide("Crux");
         // SAFETY: plain WinHTTP session calls; every handle opened is closed below.
         let session = unsafe {
             WinHttpOpen(

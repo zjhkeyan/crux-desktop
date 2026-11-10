@@ -20,12 +20,12 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 
 /// Marks a wrapper as ours, so a re-install overwrites our own file and never
-/// somebody else's `osd`.
-const SIGNATURE: &str = "Open Science Desktop CLI wrapper";
+/// somebody else's `crux`.
+const SIGNATURE: &str = "Crux Desktop CLI wrapper";
 
 /// Delimits the block appended to a shell profile, so it is found again and
 /// written exactly once.
-const PROFILE_MARKER: &str = "# Open Science Desktop: put the osd command on PATH";
+const PROFILE_MARKER: &str = "# Crux Desktop: put the crux command on PATH";
 
 /// How `osd` became reachable.
 #[derive(Serialize, PartialEq, Debug, Clone, Copy)]
@@ -72,9 +72,9 @@ fn home() -> Result<PathBuf, String> {
 
 fn shim_name() -> &'static str {
     if cfg!(windows) {
-        "osd.cmd"
+        "crux.cmd"
     } else {
-        "osd"
+        "crux"
     }
 }
 
@@ -146,12 +146,12 @@ fn writable(dir: &Path) -> bool {
     }
 }
 
-/// The bundled `osd`, when this build carries it. Tauri strips the target
+/// The bundled `crux`, when this build carries it. Tauri strips the target
 /// triple when it bundles an `externalBin`, so it sits under the plain name
-/// next to the app binary — the same place `osd` looks for `opencode`.
+/// next to the app binary — the same place `crux` looks for `opencode`.
 fn bundled_osd() -> Option<PathBuf> {
     let exe = std::env::current_exe().ok()?;
-    let name = if cfg!(windows) { "osd.exe" } else { "osd" };
+    let name = if cfg!(windows) { "crux.exe" } else { "crux" };
     let path = exe.parent()?.join(name);
     path.is_file().then_some(path)
 }
@@ -170,15 +170,15 @@ fn wrapper_script(binary: &Path) -> String {
     // Uninstalling the app cannot reach this file: on macOS it is a drag to the
     // trash, and on the other platforms the uninstaller runs as a different user
     // than the one whose PATH this is. So the wrapper notices that the app is
-    // gone and removes ITSELF the next time anyone types `osd`, rather than
+    // gone and removes ITSELF the next time anyone types `crux`, rather than
     // leaving a command that fails with a puzzling "no such file".
     if cfg!(windows) {
         format!(
             "@echo off\r\n\
-             rem {SIGNATURE}. A wrapper, not a symlink: osd finds its sidecars\r\n\
+             rem {SIGNATURE}. A wrapper, not a symlink: crux finds its sidecars\r\n\
              rem and bundled resources next to the real executable.\r\n\
              if not exist \"{path}\" (\r\n\
-             echo Open Science Desktop is no longer installed; removing this leftover osd command. 1>&2\r\n\
+             echo Crux Desktop is no longer installed; removing this leftover crux command. 1>&2\r\n\
              del \"%~f0\" >nul 2>&1\r\n\
              exit /b 127\r\n\
              )\r\n\
@@ -187,11 +187,11 @@ fn wrapper_script(binary: &Path) -> String {
     } else {
         format!(
             "#!/bin/sh\n\
-             # {SIGNATURE}. A wrapper, not a symlink: osd finds its sidecars and\n\
+             # {SIGNATURE}. A wrapper, not a symlink: crux finds its sidecars and\n\
              # bundled resources next to the real executable, and macOS does not\n\
              # resolve a symlink for current_exe().\n\
              if [ ! -x \"{path}\" ]; then\n\
-             \techo \"Open Science Desktop is no longer installed; removing this leftover osd command.\" >&2\n\
+             \techo \"Crux Desktop is no longer installed; removing this leftover crux command.\" >&2\n\
              \trm -f -- \"$0\"\n\
              \texit 127\n\
              fi\n\
@@ -395,15 +395,15 @@ fn ensure_reachable(dir: &Path) -> (PathRoute, Option<PathBuf>) {
 /// Install the wrapper and make sure its directory is on PATH. The one place
 /// that writes anything; both the launch hook and the settings button call it.
 fn install() -> Result<CliShimStatus, String> {
-    let binary = bundled_osd().ok_or("this build does not carry the osd command")?;
+    let binary = bundled_osd().ok_or("this build does not carry the crux command")?;
     if runs_from_removable_image(&binary) {
-        return Err("this copy is running from the disk image — drag Open Science into \
+        return Err("this copy is running from the disk image — drag Crux into \
                     Applications, open it from there, and the command installs itself"
             .into());
     }
     let dir = shim_dir()?;
     let shim = dir.join(shim_name());
-    // Never overwrite a file that is not ours — a user with their own `osd`
+    // Never overwrite a file that is not ours — a user with their own `crux`
     // gets told, not clobbered.
     if let Ok(text) = std::fs::read_to_string(&shim) {
         if !text.contains(SIGNATURE) {
@@ -427,19 +427,19 @@ fn install() -> Result<CliShimStatus, String> {
     Ok(status_for(Some(binary), &shim, route, profile))
 }
 
-/// Called once per launch, off the main thread: after installing the app, `osd`
+/// Called once per launch, off the main thread: after installing the app, `crux`
 /// works in a new terminal without the user having asked for it. Idempotent,
 /// and silent about everything except a genuine failure.
 pub fn install_on_launch() {
     std::thread::spawn(|| match install() {
         Ok(status) => {
             if status.route == PathRoute::Unreachable {
-                eprintln!("osd installed at {} but not on PATH", status.shim);
+                eprintln!("crux installed at {} but not on PATH", status.shim);
             }
         }
-        // A dev build carries no `osd`; that is not worth a line in the log.
+        // A dev build carries no `crux`; that is not worth a line in the log.
         Err(e) if e.starts_with("this build") => {}
-        Err(e) => eprintln!("could not install the osd command: {e}"),
+        Err(e) => eprintln!("could not install the crux command: {e}"),
     });
 }
 
@@ -507,16 +507,16 @@ mod tests {
 
     #[test]
     fn the_wrapper_execs_the_real_binary_and_never_symlinks_it() {
-        let script = wrapper_script(Path::new("/Applications/Open Science.app/Contents/MacOS/osd"));
-        assert!(script.contains("/Applications/Open Science.app/Contents/MacOS/osd"));
+        let script = wrapper_script(Path::new("/Applications/Crux.app/Contents/MacOS/crux"));
+        assert!(script.contains("/Applications/Crux.app/Contents/MacOS/crux"));
         assert!(script.contains(SIGNATURE), "a re-install must recognise its own file");
         if cfg!(windows) {
             assert!(script.starts_with("@echo off"), "{script}");
-            assert!(script.contains("%*"), "arguments must reach osd: {script}");
+            assert!(script.contains("%*"), "arguments must reach crux: {script}");
         } else {
             assert!(script.starts_with("#!/bin/sh"), "{script}");
             assert!(script.contains("exec \""), "{script}");
-            assert!(script.contains("\"$@\""), "arguments must reach osd: {script}");
+            assert!(script.contains("\"$@\""), "arguments must reach crux: {script}");
         }
     }
 
@@ -616,8 +616,8 @@ mod tests {
         // is reading the file is the part worth proving.
         use std::os::unix::fs::PermissionsExt;
         let dir = tmp("gone");
-        let missing = dir.join("Open Science.app/Contents/MacOS/osd");
-        let shim = dir.join("osd");
+        let missing = dir.join("Crux.app/Contents/MacOS/crux");
+        let shim = dir.join("crux");
         std::fs::write(&shim, wrapper_script(&missing)).unwrap();
         std::fs::set_permissions(&shim, std::fs::Permissions::from_mode(0o755)).unwrap();
 
@@ -628,7 +628,7 @@ mod tests {
         assert!(!shim.exists(), "the leftover command must delete itself");
 
         // And with the app present it still just runs it, arguments intact.
-        let real = dir.join("real-osd");
+        let real = dir.join("real-crux");
         std::fs::write(&real, "#!/bin/sh\necho \"ran with: $*\"\n").unwrap();
         std::fs::set_permissions(&real, std::fs::Permissions::from_mode(0o755)).unwrap();
         std::fs::write(&shim, wrapper_script(&real)).unwrap();
@@ -732,11 +732,11 @@ mod tests {
         // installed and missing at the same time.
         if cfg!(target_os = "macos") {
             assert!(runs_from_removable_image(Path::new(
-                "/Volumes/Open Science/Open Science.app/Contents/MacOS/osd"
+                "/Volumes/Crux/Crux.app/Contents/MacOS/crux"
             )));
         }
         assert!(!runs_from_removable_image(Path::new(
-            "/Applications/Open Science.app/Contents/MacOS/osd"
+            "/Applications/Crux.app/Contents/MacOS/crux"
         )));
     }
 }

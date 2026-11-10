@@ -11,7 +11,7 @@
 //! 1. Claude streams several assistant rows per reply, sharing one message and
 //!    request id, and later rows can carry more complete usage. Counting rows
 //!    would multiply one reply's cost; rows are merged by that id, taking the
-//!    maximum of each bucket (this is Orca's rule, MIT).
+//!    maximum of each bucket (this is Crux's rule, MIT).
 //! 2. Codex writes the SAME reply twice once it is new enough: a
 //!    `token_usage_record`, and an `event_msg`/`token_count` carrying the same
 //!    `last_token_usage`. Verified on a session holding both — the eight

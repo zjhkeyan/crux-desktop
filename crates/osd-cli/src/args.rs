@@ -9,7 +9,7 @@ use std::collections::HashMap;
 /// Flags that never take a value. Anything else spelled `--x` consumes the
 /// next argument, so an unknown flag fails loudly instead of eating a word of
 /// the prompt.
-const BOOLEANS: &[&str] = &["json", "lan", "wait", "help", "quiet", "all", "force", "no-enter", "new", "terminal", "here", "no-wait"];
+const BOOLEANS: &[&str] = &["json", "lan", "wait", "help", "quiet", "all", "force", "no-enter", "new", "terminal", "here", "no-wait", "open-pane", "cleanup"];
 
 pub struct Args {
     pub command: String,
@@ -61,7 +61,7 @@ impl Args {
         // A second bare word is the subcommand only for the grouped commands;
         // `osd session send <id>` must not lose its id.
         let sub = match command.as_str() {
-            "session" | "screen" | "term" | "question" | "project" | "run" | "fs" | "permission" | "auth" | "account" | "model" | "approval" | "settings"
+            "session" | "screen" | "term" | "question" | "project" | "worktree" | "run" | "fs" | "permission" | "auth" | "account" | "model" | "approval" | "settings"
                 if !positional.is_empty() =>
             {
                 positional.remove(0)

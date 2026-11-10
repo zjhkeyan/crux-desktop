@@ -1,6 +1,6 @@
 // `computer`: look at, and drive, the apps on the user's own screen.
 //
-// The whole design is Orca's (github.com/stablyai/orca, MIT): read the app's
+// The whole design is Crux's (github.com/ai4s-research/open-science, MIT): read the app's
 // ACCESSIBILITY TREE, act on a numbered element from it, and treat pixels as
 // confirmation rather than as the interface. That is why there is no
 // "screenshot, then click 840,312" loop here — a click by element index either

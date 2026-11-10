@@ -1,6 +1,6 @@
 // Everything that touches Monaco, kept behind one dynamic import.
 //
-// Monaco is the editor VS Code itself runs, and the one Orca uses
+// Monaco is the editor VS Code itself runs, and the one Crux uses
 // (`components/editor/monaco-*`). The reason to take it whole rather than
 // assemble an editor is that the things that make an editor feel real —
 // find and replace, folding, multiple cursors, column selection, a suggest

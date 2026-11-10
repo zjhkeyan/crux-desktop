@@ -5,7 +5,7 @@ The host owns the public API. This process is intentionally a small
 AT-SPI adapter: read one JSON operation file, execute it in the user's desktop
 session, and print one JSON response.
 
-Ported from Orca (github.com/stablyai/orca, MIT, Copyright (c) 2026 Lovecast
+Ported from Crux (github.com/ai4s-research/open-science, MIT, Copyright (c) 2026 Lovecast
 Inc.) -- its accessibility-first computer-use design is the one this follows.
 """
 

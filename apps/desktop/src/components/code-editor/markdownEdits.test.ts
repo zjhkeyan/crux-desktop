@@ -63,8 +63,8 @@ describe("the markdown toolbar's character styles", () => {
   });
 
   it("builds a link with the text selected and a placeholder target", () => {
-    const r = wrapSelection("Orca", "[", "](url)");
-    expect(r.text).toBe("[Orca](url)");
-    expect(r.text.slice(r.from, r.to)).toBe("Orca");
+    const r = wrapSelection("Crux", "[", "](url)");
+    expect(r.text).toBe("[Crux](url)");
+    expect(r.text.slice(r.from, r.to)).toBe("Crux");
   });
 });

@@ -55,7 +55,7 @@
   },
   "page": {
     "title": "设置",
-    "subtitle": "此处的所有设置都配置内置的 OpenCode 运行时——一份配置，无需重复。"
+    "subtitle": "此处的所有设置都配置内置的智能体运行时——一份配置，无需重复。"
   },
   "runtime": {
     "title": "网络",
@@ -83,8 +83,8 @@
     "mirrorPypiPlaceholder": "https://pypi.tuna.tsinghua.edu.cn/simple",
     "mirrorPythonPlaceholder": "https://mirror.example.com/python-build-standalone",
     "mirrorHint": "可选镜像,仅在设置 Python 工具(Jupyter、科学数据库)下载时使用,适合 pypi.org / github.com 访问缓慢的网络。留空则使用默认源。",
-    "serverTitle": "OpenCode 服务",
-    "serverHint": "应用驱动的 OpenCode。内置的会自动启动；只有使用自己的 opencode serve 时才填写地址。"
+    "serverTitle": "智能体运行时服务",
+    "serverHint": "应用驱动的智能体运行时。内置服务会自动启动；仅在连接自定义运行时服务时填写地址。"
   },
   "acp": {
     "add": "添加智能体",
@@ -96,7 +96,7 @@
     "commandPlaceholder": "命令（npx、gemini…）",
     "argsLabel": "参数",
     "argsPlaceholder": "参数（-y @agentclientprotocol/codex-acp）",
-    "limits": "ACP 智能体以命令形式在本机运行，工作在对话所在的文件夹里，和 OpenCode 并存。它自行管理模型、命令和历史记录，所以模型选择器和计划模式只用于 OpenCode 对话。"
+    "limits": "ACP 智能体以命令形式在本机运行，工作在对话所在的文件夹里，与内置智能体并存。它自行管理模型、命令和历史记录，所以模型选择器和计划模式只用于内置智能体对话。"
   },
   "updates": {
     "title": "应用更新",
@@ -120,8 +120,8 @@
     "privacy": "仅访问公开的 GitHub Releases API。不会发送工作区文件或 API 密钥。"
   },
   "model": {
-    "title": "OpenCode 默认模型",
-    "hint": "新的 OpenCode 对话默认使用的模型。可选范围由下方的供应商提供。",
+    "title": "默认模型",
+    "hint": "新对话默认使用的模型。可选范围由下方的模型供应商提供。",
     "connectPrompt": "连接运行时以配置模型。",
     "notSet": "未设置——选择一个默认模型",
     "providersDivider": "供应商",
@@ -149,10 +149,10 @@
     "noProvidersHint": "在下方连接一个 Provider。"
   },
   "providers": {
-    "title": "OpenCode 供应商",
-    "hint": "登录认证、自定义端点和导入的 OpenCode 登录信息",
+    "title": "模型供应商",
+    "hint": "API 密钥认证、自定义端点与模型配置",
     "webHint": "已连接的供应商 — 浏览器端只读",
-    "webNote": "API 密钥和自定义端点在运行 workbench 的那台机器上设置：桌面应用里，或者无窗口运行时用 `osd auth set`。凭据不会经过网关。",
+    "webNote": "API 密钥和自定义端点在运行 workbench 的那台机器上设置：桌面应用里，或者无窗口运行时用 `crux auth set`。凭据不会经过网关。",
     "connectPrompt": "连接运行时以管理提供商。",
     "manage": "管理",
     "collapse": "收起",
@@ -182,7 +182,7 @@
     "fetchingModels": "获取中…",
     "noModelsFound": "端点未返回任何模型。",
     "addEndpoint": "添加端点",
-    "importLogin": "已经在使用 OpenCode CLI？导入其登录信息",
+    "importLogin": "导入本地 CLI 登录信息",
     "addTitle": "添加 Provider",
     "fieldName": "名称",
     "fieldApiStyle": "API 风格",
@@ -316,8 +316,8 @@
     "couldNotRemoveMcp": "无法移除 MCP 服务器",
     "mcpRemoved": "MCP 服务器 {{name}} 已移除",
     "importFailed": "导入失败",
-    "noOpenCodeLoginFound": "在此计算机上未找到 OpenCode CLI 登录信息。",
-    "importedLogin": "已导入您的 OpenCode CLI 登录信息。",
+    "noOpenCodeLoginFound": "在此计算机上未找到本地 CLI 登录信息。",
+    "importedLogin": "已导入您的本地 CLI 登录信息。",
     "couldNotSetProxy": "无法应用代理设置",
     "proxyApplied": "代理设置已生效",
     "mirrorSaved": "镜像设置已保存",
@@ -357,7 +357,7 @@
   },
   "remoteCompute": {
     "title": "远程计算",
-    "subtitle": "通过 SSH 在您自己的服务器上运行任务——CPU 或 GPU 均可；Slurm 为可选项。使用您自己的 SSH 密钥；不会在该机器上安装任何内容。",
+    "subtitle": "使用 Crux Link 或 SSH 在自己的服务器上运行 CPU 或 GPU 作业；支持可选 Slurm。",
     "unavailable": "该功能在桌面应用中可用。",
     "empty": "尚无机器——请在下方添加。",
     "hostPlaceholderWithHosts": "user@host — 或从您的 ~/.ssh/config 中选择（{{count}}）",
@@ -397,7 +397,12 @@
     "signedIn": "已登录",
     "signOut": "断开",
     "signOutTitle": "关闭与这台机器的共享连接",
-    "sharingUnavailable": "需要密码或验证码，而这依赖 OpenSSH 连接复用（Windows 不支持）"
+    "sharingUnavailable": "此平台请使用 Crux Link 完成密码和双重验证登录。",
+    "cruxLink": {
+      "connect": "使用 Crux Link 连接（向导）",
+      "hint": "支持 Windows、macOS 和 Linux。验证主机指纹、配对专用密钥，并在启动前检查服务器。",
+      "close": "关闭向导"
+    }
   },
   "remote": {
     "title": "远程访问",
@@ -508,18 +513,18 @@
     }
   },
   "cli": {
-    "title": "终端命令（osd）",
+    "title": "终端命令（crux）",
     "hint": "在终端里用这个工作台——会话、项目、文件，以及给没有显示器的机器用的无界面服务端。随应用一起装好，无需配置。",
-    "readyPath": "可用——打开一个新终端，运行 `osd`。",
-    "readyProfile": "可用——已写入 {{profile}}。打开一个新终端，运行 `osd`。",
-    "readyEnvironment": "可用——已加入你的用户 PATH。打开一个新终端，运行 `osd`。",
+    "readyPath": "可用——打开一个新终端，运行 `crux`。",
+    "readyProfile": "可用——已写入 {{profile}}。打开一个新终端，运行 `crux`。",
+    "readyEnvironment": "可用——已加入你的用户 PATH。打开一个新终端，运行 `crux`。",
     "unreachable": "已安装，但你的 PATH 到不了它。把这行加进 shell 配置：",
     "notInstalled": "尚未安装。点按钮，或重启应用。",
-    "unavailable": "这个构建没有携带 osd 命令。",
+    "unavailable": "这个构建没有携带 crux 命令。",
     "occupied": "该名字下已有一个不是本应用写入的文件——请先重命名。",
     "install": "安装命令",
     "repair": "重新安装",
-    "error": "安装 osd 命令失败"
+    "error": "安装 crux 命令失败"
   },
   "memory": {
     "title": "记忆",
@@ -539,15 +544,15 @@
     "disabledNote": "记忆已关闭，该文件当前不会被加载。"
   },
   "agentModels": {
-    "title": "OpenCode 各角色的模型与思考强度",
-    "hint": "让主角色用强模型推理，同时把审阅、探索类角色放在快模型上，并分别设定各自的思考强度。",
+    "title": "智能体角色与模型思考配置",
+    "hint": "为各个智能体角色自由配置使用的模型与思考强度，也可添加自定义角色。",
     "noModels": "请先接入一个供应商再选择模型。",
     "followDefault": "跟随默认",
     "modelFor": "{{agent}} 使用的模型",
     "defaultEffort": "默认强度",
     "effortFor": "{{agent}} 的思考强度",
     "retiredOption": "{{model}} — 已下架",
-    "primaryHint": "build 与 plan 负责运行你发出的消息。这里设定的模型会生效，除非你在某个会话内单独选择了模型——那个选择只对该会话生效。",
+    "primaryHint": "为您对话或调度的智能体角色指定专属模型与思考强度；未单独指定的角色默认跟随全局模型。",
     "group": {
       "conversation": "你会对话的角色",
       "utility": "工作台自己调用的"
@@ -556,8 +561,23 @@
     "about": {
       "title": "根据首条消息给会话命名。",
       "summary": "写会话的简短摘要。",
-      "compaction": "把过长的会话改写到能塞进上下文窗口。"
-    }
+      "compaction": "把过长的会话改写到能塞进上下文窗口。",
+      "build": "执行任务，并根据配置的权限使用工具。",
+      "plan": "分析需求并制定执行计划。",
+      "general": "研究复杂问题并执行多步骤任务。",
+      "explore": "探索代码库，查找文件并解释代码的工作方式。",
+      "reviewer": "审查科学严谨性、可追溯性与可复现性，不修改文件。",
+      "crux-run-doctor": "诊断 Crux 探索运行并建议修复方案，不更改运行。",
+      "crux-task-author": "将优化目标转化为通过验证的 Crux 探索任务。",
+      "memory-curator": "提炼历史会话、实验记录与文献语料，合并整理至 .openscience/memory/ 与 MEMORY.md。"
+    },
+    "roleName": "角色名称",
+    "addRole": "添加角色",
+    "customRole": "自定义角色",
+    "removeRole": "移除",
+    "resetRole": "重置",
+    "removeRoleFor": "移除角色 {{agent}}",
+    "resetRoleFor": "重置 {{agent}} 的配置"
   },
   "ssh": {
     "title": "登录 {{host}}",
@@ -608,13 +628,13 @@
     "opened": "已打开权限设置窗口。",
     "error": "电脑操作",
     "accessibility": "辅助功能",
-    "accessibilityHint": "必需。让助手能读取应用界面并进行操作。权限授予的是 Open Science Computer Use 这个独立助手，而不是整个工作台。",
+    "accessibilityHint": "必需。让助手能读取应用界面并进行操作。权限授予的是 Crux Computer Use 这个独立助手，而不是整个工作台。",
     "screenshots": "屏幕录制",
-    "screenshotsHint": "可选，且授予的是 Open Science 本身而不是那个独立助手——macOS 把屏幕捕获算在发起请求的应用头上。仅当智能体需要查看无法以文本读取的窗口内容（例如图表或画布）时才需要。"
+    "screenshotsHint": "可选，且授予的是 Crux 本身而不是那个独立助手——macOS 把屏幕捕获算在发起请求的应用头上。仅当智能体需要查看无法以文本读取的窗口内容（例如图表或画布）时才需要。"
   },
   "userBrowser": {
     "title": "你自己装的浏览器",
-    "hint": "Open Science 发现这台 Mac 上有一个它的智能体可以从命令行驱动的浏览器。这里没有需要配置的东西——放在这里是让你知道它能被碰到。",
+    "hint": "Crux 发现这台 Mac 上有一个它的智能体可以从命令行驱动的浏览器。这里没有需要配置的东西——放在这里是让你知道它能被碰到。",
     "name": "ego lite",
     "reachable": "已安装且可用。每个会话首次使用前会先请求你确认。",
     "notReachable": "已安装，但这台机器上没有它的命令行工具，智能体够不着。运行 ego lite 自带的安装流程即可补上。",

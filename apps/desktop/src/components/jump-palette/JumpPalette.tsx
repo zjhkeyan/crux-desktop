@@ -12,7 +12,7 @@ import { isGatewayWeb } from "@/lib/webMode";
 
 const isMac = typeof navigator !== "undefined" && navigator.userAgent.includes("Mac");
 
-/** ⌘J on macOS; Ctrl+Shift+J elsewhere, as in Orca — a bare Ctrl+J is a line
+/** ⌘J on macOS; Ctrl+Shift+J elsewhere, as in Crux — a bare Ctrl+J is a line
  *  feed, which a terminal must keep receiving. Exported so the terminal can
  *  leave the chord to the app. */
 export function isJumpChord(e: KeyboardEvent): boolean {
@@ -35,7 +35,7 @@ const matchShown = (_value: string, search: string, keywords?: string[]) =>
 
 /**
  * ⌘J: jump to any project, Screen, open pane or session by typing its name —
- * Orca's worktree jump palette (MIT), in this app's Project → Screens → panes
+ * Crux's worktree jump palette (MIT), in this app's Project → Screens → panes
  * shape. ⌘K stays the command palette; this one is about WHERE to go.
  */
 export function JumpPalette() {

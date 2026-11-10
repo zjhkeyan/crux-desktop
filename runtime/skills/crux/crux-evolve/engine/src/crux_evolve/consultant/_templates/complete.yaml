@@ -1,0 +1,348 @@
+# =============================================================================
+# Crux Evolve Complete Configuration Template
+# All available fields with descriptions. Based on AppConfig schema.
+# =============================================================================
+
+# ===== General Settings =====================================================
+
+# Project name
+project_name: "my-algorithm-design"
+
+# Background information and context for the task (can be used in prompts)
+background: ""
+
+# Base working directory where task directories are created
+base_dir: "./runs"
+
+# Run identifier (auto-generated 8-char UUID if not provided)
+# run_id: ""
+
+# Random seed
+random_seed: 42
+
+# ===== LLM Providers ========================================================
+# Provider definitions can also come from global settings (~/.crux_evolve/settings.yaml).
+# Task-level fields override global fields for the same provider name.
+
+providers:
+  - name: "default"
+    type: "openai_compatible"   # openai | anthropic | openai_compatible | mock
+    api_key: ""                 # API key for authentication
+    auth_token: ""              # Auth token for providers that require it (e.g. Anthropic)
+    base_url: null              # Custom base URL for API
+    model: "gpt-4"             # Model to use
+    temperature: 0.7            # Sampling temperature (0.0 ~ 2.0)
+    max_tokens: 32768           # Maximum tokens to generate
+    timeout: 60.0               # Request timeout in seconds
+    max_retries: 3              # Maximum retry attempts
+
+# ===== Evaluator Configuration ==============================================
+# Discriminated by "type" field.
+# Showing type: "custom". See commented section below for type: "executable".
+
+evaluator:
+  type: "custom"
+  # Module path for custom evaluator (format: module.path:ClassName)
+  module: ""
+  # Metrics to compute
+  metrics: []
+
+  # -- Dataset configuration --
+  dataset:
+    mode: "files"               # Dataset discovery mode: files | directory | glob
+    files: null                 # Explicit list of files (for files mode)
+    path: null                  # Directory path (for directory mode)
+    recursive: true             # Search recursively in subdirectories (for directory mode)
+    pattern: null               # Glob pattern (for glob mode)
+
+  timeout: 60.0                 # Evaluation timeout per instance in seconds
+  max_retries: 1                # Maximum retries for failed evaluations
+  parallel: true                # Enable parallel evaluation across multiple CPU cores
+  batch_size: 10                # Batch size for parallel evaluation
+
+# -- Alternative: type: "executable" --
+# evaluator:
+#   type: "executable"
+#   # Relative path to executable in project_root
+#   executable: ""
+#   # Command template with placeholders: {executable}, {data_file}, {timeout}, {project_root}
+#   command: "{executable} {data_file}"
+#   # Regex patterns for extracting metrics from output
+#   metric_patterns:
+#     - name: ""                # Metric name (e.g. 'execution_time_ms')
+#       pattern: ""             # Regex with one capture group for the numeric value
+#       type: "maximize"        # Optimization direction: minimize | maximize
+#       weight: 1.0             # Weight for multi-objective scoring
+#   dataset:
+#     mode: "files"
+#     files: null
+#     path: null
+#     recursive: true
+#     pattern: null
+#   timeout: 60.0
+#   max_retries: 1
+#   parallel: true
+#   batch_size: 10
+
+# ===== Evolution Configuration ==============================================
+# Discriminated by "type" field.
+# Showing type: "dyca". See commented section below for type: "island_ga".
+
+evolution:
+  type: "dyca"
+
+  # -- Base evolution parameters --
+  population_size: 4            # Population size
+  max_generations: 100          # Maximum generations
+  elite_ratio: 0.1              # Elite preservation ratio (0.0 ~ 1.0)
+  mutation_rate: 0.3            # Mutation probability (0.0 ~ 1.0)
+  crossover_rate: 0.5           # Crossover probability (0.0 ~ 1.0)
+  survival_selection_strategy: "truncation"  # tournament | roulette | rank | random | truncation
+  tournament_size: 3            # Tournament size
+
+  # -- Early stopping --
+  early_stop_patience: 20       # Early stopping patience (generations)
+  early_stop_threshold: 1.0e-06 # Improvement threshold
+
+  # -- Checkpointing --
+  checkpoint_interval: 10       # Checkpoint interval (generations)
+  max_checkpoints: 5            # Maximum checkpoints to keep
+
+  # -- DyCA-specific parameters --
+  n_clusters: 3                 # Number of instance clusters
+  clustering_method: "kmeans"   # Clustering algorithm: kmeans | agglomerative
+  recluster_interval: 5         # Generations between reclustering checks
+  ari_threshold: 0.8            # ARI threshold for cluster stability (0.0 ~ 1.0)
+  n_anchors: 5                  # Number of anchor algorithms for clustering
+
+  # Pool settings
+  generalist_pool_size: 10      # Maximum generalist pool size
+  specialist_pool_size: 10      # Maximum specialist pool size per cluster
+  complementary_pool_size: 10   # Maximum complementary pool size
+  elite_archive_size: 5         # Elite archive size per cluster
+
+  # SOS settings
+  sos_stagnation_threshold: 3   # Generations without improvement to trigger SOS
+
+  # Resource allocation
+  base_complementary_ratio: 0.2 # Base fraction of resources for complementary pool (0.0 ~ 1.0)
+
+  # Offspring
+  offspring_per_generation: 5   # Number of new individuals per generation
+
+  # Using mode
+  using_mode: false             # If true, freeze clustering and only run specialist evolution
+
+# -- Alternative: type: "island_ga" --
+# evolution:
+#   type: "island_ga"
+#
+#   # Base evolution parameters (same as above)
+#   population_size: 4
+#   max_generations: 100
+#   elite_ratio: 0.1
+#   mutation_rate: 0.3
+#   crossover_rate: 0.5
+#   survival_selection_strategy: "truncation"
+#   tournament_size: 3
+#   early_stop_patience: 20
+#   early_stop_threshold: 1.0e-06
+#   checkpoint_interval: 10
+#   max_checkpoints: 5
+#
+#   # Island GA-specific parameters
+#   num_islands: 5              # Number of independent evolution islands
+#   island_population_size: 20  # Population per island
+#   migration_interval: 5       # Generations between migrations
+#   migration_rate: 0.1         # Fraction of population to migrate per interval
+#   migration_strategy: "best"  # best | random | elite | worst
+#   migration_topology: "ring"  # ring | full | hierarchy | mesh
+#   per_island_config: null     # Optional per-island evolution parameters
+#   parallel_islands: true      # Evolve islands in parallel
+
+# ===== Coder Configuration ==================================================
+# Discriminated by "type" field.
+# Showing type: "custom". See commented sections below for other types.
+
+coder:
+  type: "custom"
+  provider: "default"             # Name of the LLM provider to use for code generation
+  timeout: 300.0                # Generation timeout in seconds
+  max_retries: 2                # Maximum retries
+  log_to_console: false         # Enable logging to console
+
+  # Custom coder-specific parameters
+  prompt_template: null         # Custom prompt template for initial generation (overrides default)
+  mutation_prompt_template: null # Custom prompt template for mutation (overrides default)
+  context_max_tokens: 4096      # Maximum tokens of project context to inject into prompts
+  temperature: 0.7              # Sampling temperature for code generation (0.0 ~ 2.0)
+  max_gen_tokens: 4096          # Maximum tokens for LLM generation output
+  default_extension: "py"       # Default file extension when language is not detected
+
+# -- Alternative: type: "claude_code" --
+# coder:
+#   type: "claude_code"
+#   provider: "default"
+#   timeout: 300.0
+#   max_retries: 2
+#   log_to_console: false
+
+# -- Alternative: type: "opencode" --
+# coder:
+#   type: "opencode"
+#   provider: "default"
+#   timeout: 300.0
+#   max_retries: 2
+#   log_to_console: false
+#   binary_path: "opencode"     # Path to the opencode CLI binary
+#   provider_name: ""           # CLI provider name (e.g. openai, anthropic); if empty, derived from provider type
+
+# ===== Planner Configuration ================================================
+
+planner:
+  type: "llm_evolution"         # Planner type (registered name)
+  provider: "default"           # Name of the LLM provider to use for planning
+  selection_strategy: "weighted" # Selection strategy for choosing samplers: random | weighted | tournament | roulette
+  parent_selection_strategy: "tournament"  # Strategy for selecting parents: tournament | roulette | rank | random
+
+  # List of samplers to use
+  samplers: []
+  # Example:
+  # samplers:
+  #   - name: "init_sampler"
+  #     config: {}
+  #   - name: "mutation_sampler"
+  #     config: {}
+  #   - name: "crossover_sampler"
+  #     config: {}
+
+  # Optional build configuration for algorithm verification
+  build: null
+  # Example:
+  # build:
+  #   script: "make -j4"        # Build script (string for all platforms, or dict per platform)
+  #   # Platform-specific example:
+  #   # script:
+  #   #   linux: "cmake -B build && cmake --build build -j4"
+  #   #   darwin: "cmake -B build && cmake --build build -j4"
+  #   #   windows: "msbuild /p:Configuration=Release"
+  #   timeout: 60.0             # Build timeout in seconds
+
+# ===== Memory Configuration =================================================
+
+memory:
+  max_entries: 10000            # Maximum entries
+  similarity_threshold: 0.8     # Similarity threshold (0.0 ~ 1.0)
+  decay_factor: 0.99            # Memory decay factor (0.0 ~ 1.0)
+
+  # Maximum memory cards to include in each sampler prompt
+  max_prompt_cards: 5
+
+  # Persist auto-extracted cards to disk (in memory/ subdirectory)
+  persist: true
+
+  # Static memory cards defined inline in config
+  static_cards: []
+  # Example:
+  # static_cards:
+  #   - type: "domain_knowledge"
+  #     title: "Platform constraints"
+  #     content: "Limited stack depth (1024 frames). Prefer iterative algorithms."
+  #     tags: [constraints, platform]
+  #   - type: "general_insight"
+  #     title: "Sorting tip"
+  #     content: "Hybrid approaches combining quicksort with insertion sort for small subarrays often work well."
+  #     tags: [sorting, hybrid]
+
+  # Auto-extraction of memory from evaluated algorithms
+  auto_extraction:
+    enabled: true               # Enable LLM-based memory extraction
+    max_cards_per_generation: 3  # Maximum cards to extract per generation
+    extraction_temperature: 0.3  # LLM temperature for extraction
+
+    # Good algorithm extraction (what works)
+    extract_good: true           # Extract insights from high-performing algorithms
+    good_score_threshold: null   # Absolute score threshold (null = use relative)
+    good_relative_threshold: 0.8 # Percentile threshold (top 20% of population)
+
+    # Bad algorithm extraction (what to avoid)
+    extract_bad: true            # Extract lessons from low-performing algorithms
+    bad_score_threshold: null    # Absolute score threshold (null = use relative)
+    bad_relative_threshold: 0.2  # Percentile threshold (bottom 20% of population)
+    extract_on_failure: true     # Extract from algorithms that fail evaluation entirely
+
+# ===== Logging Configuration ================================================
+
+logging:
+  level: "TRACE"                # Log level: TRACE | DEBUG | INFO | WARNING | ERROR | CRITICAL
+  format: null                  # Log format (default: loguru format)
+  file: null                    # Log file path (auto-set by workspace if null)
+  console: true                 # Enable console logging
+  json_format: false            # Use JSON format
+
+# ===== Workspace Configuration ==============================================
+
+workspace:
+  auto_create: true             # Whether to automatically create the task directory structure
+  subdirs:                      # Subdirectory names within the task directory
+    state: "state"
+    logs: "logs"
+    checkpoints: "checkpoints"
+    generated: "generated"
+    temp: "temp"
+    memory: "memory"            # Persistent storage for auto-extracted memory cards
+
+# ===== Version Control Configuration ========================================
+
+version_control:
+  enabled: true                 # Enable version control
+  type: "git_worktree"          # Version control implementation type: git_worktree | none
+  local_path: null              # Path to local code repository on disk
+  remote_url: null              # Remote Git URL to clone from
+  revision: null                # Git revision (branch, commit hash, or tag) to check out when cloning
+  auto_initialize: true         # Automatically initialize repository if it doesn't exist (only for local_path)
+  auto_cleanup: true            # Automatically clean up old worktrees
+  max_worktree_age_days: 7.0    # Maximum age of worktrees before automatic cleanup (in days)
+  max_worktrees: 100            # Maximum number of worktrees to keep
+  default_branch: "main"        # Default branch name for new repositories
+  commit_message_template: "Algorithm {algorithm_id}: {description}"  # Template for commit messages
+
+# ===== Repository Analyzer Configuration =====================================
+
+repo_analyzer:
+  type: "evolve_detector"       # Type of repository analyzer to use (registered name)
+  context_lines_before: 5       # Number of context lines to capture before each EVOLVE block
+  context_lines_after: 5        # Number of context lines to capture after each EVOLVE block
+  include:                      # List of glob patterns for files to include in analysis
+    - "*.py"
+    - "*.cpp"
+    - "*.cc"
+    - "*.c"
+    - "*.h"
+    - "*.hpp"
+    - "*.java"
+    - "*.js"
+    - "*.ts"
+    - "*.go"
+    - "*.rs"
+    - "*.rb"
+    - "*.sh"
+    - "*.php"
+    - "*.html"
+    - "*.xml"
+  exclude:                      # List of glob patterns for files to exclude from analysis
+    - ".git/**"
+    - ".gitignore"
+    - "__pycache__/**"
+    - "*.pyc"
+    - "node_modules/**"
+    - "build/**"
+    - "dist/**"
+    - "*.egg-info/**"
+    - ".venv/**"
+    - "venv/**"
+    - ".idea/**"
+    - ".vscode/**"
+    - "*.log"
+    - "*.tmp"
+    - "*.bak"

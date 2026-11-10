@@ -372,6 +372,8 @@ export function usePaneNames() {
       case "notebook":
       case "editor":
         return content.path.split("/").pop() || null;
+      case "discovery":
+        return t("session:discovery.title");
     }
   };
   return { describe, sessionTitle };

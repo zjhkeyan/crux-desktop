@@ -2,7 +2,7 @@
   "name": "ai4s-workbench",
   "version": "0.7.1",
   "private": true,
-  "description": "Open Science Desktop — local-first, model-agnostic AI research workbench for macOS, Windows and Linux.",
+  "description": "Crux Desktop — local-first, model-agnostic AI research workbench for macOS, Windows and Linux.",
   "license": "MIT",
   "scripts": {
     "dev": "pnpm --filter @ai4s/desktop dev",

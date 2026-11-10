@@ -1,6 +1,6 @@
 // Computer use: one call into whichever native provider this platform has.
 //
-// Ported from Orca (github.com/stablyai/orca, MIT) — accessibility tree first,
+// Ported from Crux (github.com/ai4s-research/open-science, MIT) — accessibility tree first,
 // pixels only when asked for. Everything below the dispatch is that port; this
 // file is the seam the agent's `computer` tool calls.
 import { currentComputerProvider } from './computer-provider-lifecycle'

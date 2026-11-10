@@ -17,6 +17,7 @@ import type { ProviderInfo } from "@ai4s/sdk";
 const i18n = (await import("@/i18n")).default;
 const runtime = await import("@/lib/runtime");
 const { useRuntimeStore } = runtime;
+const { setSignedInAccount } = await import("@/lib/webMode");
 const { SettingsPage } = await import("./SettingsPage");
 
 const providers: ProviderInfo[] = [
@@ -53,37 +54,43 @@ describe("Providers in the gateway web client", () => {
   const initialRuntime = useRuntimeStore.getState();
 
   beforeEach(async () => {
+    setSignedInAccount(null);
     vi.spyOn(runtime, "getClient").mockReturnValue(webClient());
     useRuntimeStore.setState({ status: "ready", defaultModel: "openai/gpt-5.2", switching: false });
     await i18n.changeLanguage("en");
-    await renderAt("/settings/agents");
   });
 
   afterEach(() => {
     view?.unmount();
     view = undefined;
+    setSignedInAccount(null);
     vi.restoreAllMocks();
     useRuntimeStore.setState(initialRuntime, true);
   });
 
-  it("shows what is connected and where to change it", async () => {
-    // Scoped to the card: the provider names also appear in the model browser.
-    const card = screen.getByRole("heading", { level: 2, name: "OpenCode providers" }).closest("section")!;
+  it("unlocks API key, custom endpoint, and remove controls for the owner token", async () => {
+    await renderAt("/settings/agents");
+    const card = screen.getByRole("heading", { level: 2, name: "Model providers" }).closest("section")!;
     expect(await within(card).findByText("OpenCode Zen")).toBeInTheDocument();
     expect(within(card).getByText("OpenAI")).toBeInTheDocument();
-    expect(within(card).getByText(/osd auth set/)).toBeInTheDocument();
+    expect(within(card).getByPlaceholderText(/Connect a provider/)).toBeInTheDocument();
+    expect(within(card).getByRole("button", { name: /Custom endpoint/ })).toBeInTheDocument();
+    expect(within(card).getByRole("button", { name: "Remove" })).toBeInTheDocument();
+  });
+
+  it("keeps guest web accounts read-only and offers none of the provider writes", async () => {
+    setSignedInAccount("guest");
+    await renderAt("/settings/agents");
+    const card = screen.getByRole("heading", { level: 2, name: "Model providers" }).closest("section")!;
+    expect(await within(card).findByText("OpenCode Zen")).toBeInTheDocument();
+    expect(within(card).getByText("OpenAI")).toBeInTheDocument();
+    expect(within(card).getByText(/crux auth set/)).toBeInTheDocument();
     expect(
       within(card).getByText("Connected providers — read-only from the browser"),
     ).toBeInTheDocument();
-  });
-
-  it("offers none of the writes the gateway refuses", () => {
-    // Custom endpoint (PATCH /global/config with a provider block → 403).
     expect(screen.queryByRole("button", { name: /Custom endpoint/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Add endpoint" })).not.toBeInTheDocument();
-    // Connecting a provider (POST /auth → 403).
     expect(screen.queryByPlaceholderText(/Connect a provider/)).not.toBeInTheDocument();
-    // Removing one (DELETE /auth, config write → 403).
     expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
   });
 });

@@ -16,6 +16,160 @@ const STORE_FILE: &str = "provenance.jsonl";
 /// Per-record content cap: keeps the store bounded; larger writes are truncated.
 const CONTENT_CAP: usize = 100_000;
 
+fn discovery_anchor_file(run_dir: &Path) -> Result<PathBuf, String> {
+    let dir = run_dir.join(".provenance");
+    let file = dir.join("runs.jsonl");
+    for path in [
+        &dir,
+        &file,
+        &dir.join("discovery-anchor.lock"),
+        &dir.join("coral-anchor.lock"),
+    ] {
+        match std::fs::symlink_metadata(path) {
+            Ok(meta) if meta.file_type().is_symlink() => {
+                return Err("Crux discovery anchor store cannot be a symlink".into())
+            }
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(e.to_string()),
+            _ => {}
+        }
+    }
+    Ok(file)
+}
+
+/// Record a confirmed Crux discovery best together with its external ledger anchor.
+pub fn record_discovery_anchor(
+    run_dir: &Path,
+    head_seq: u64,
+    head_hmac: &str,
+    best_commit: &str,
+    best_score: f64,
+) -> Result<(), String> {
+    if head_hmac.is_empty() || best_commit.is_empty() || !best_score.is_finite() {
+        return Err("invalid Crux discovery anchor".into());
+    }
+    let root = run_dir.canonicalize().map_err(|e| e.to_string())?;
+    let anchor_file = discovery_anchor_file(&root)?;
+    let dir = root.join(".provenance");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let lock_path = if dir.join("coral-anchor.lock").exists() {
+        dir.join("coral-anchor.lock")
+    } else {
+        dir.join("discovery-anchor.lock")
+    };
+    let lock = std::fs::OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .write(true)
+        .open(lock_path)
+        .map_err(|e| e.to_string())?;
+    lock.lock().map_err(|e| e.to_string())?;
+    let status = verify_discovery_anchor(&root, head_seq, head_hmac)?;
+    if status == "matched" {
+        return Ok(());
+    }
+    let existing_kind = std::fs::read_to_string(&anchor_file)
+        .ok()
+        .and_then(|text| {
+            text.lines()
+                .filter(|l| !l.trim().is_empty())
+                .filter_map(|l| serde_json::from_str::<serde_json::Value>(l).ok())
+                .find(|entry| entry["run_dir"].as_str().is_some_and(|p| Path::new(p) == root))
+                .and_then(|entry| entry["kind"].as_str().map(str::to_string))
+        })
+        .unwrap_or_else(|| "discovery_ledger_anchor".to_string());
+    let entry = serde_json::json!({"kind": existing_kind, "run_dir": root,
+        "head_seq": head_seq, "head_hmac": head_hmac, "best_commit": best_commit, "best_score": best_score});
+    use std::io::Write;
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .read(true)
+        .open(anchor_file)
+        .map_err(|e| e.to_string())?;
+    use std::io::{Read, Seek, SeekFrom};
+    if file.metadata().map_err(|e| e.to_string())?.len() > 0 {
+        file.seek(SeekFrom::End(-1)).map_err(|e| e.to_string())?;
+        let mut last = [0];
+        file.read_exact(&mut last).map_err(|e| e.to_string())?;
+        if last[0] != b'\n' {
+            file.write_all(b"\n").map_err(|e| e.to_string())?;
+        }
+    }
+    writeln!(file, "{entry}").map_err(|e| e.to_string())?;
+    file.sync_all().map_err(|e| e.to_string())
+}
+
+pub fn record_coral_anchor(
+    run_dir: &Path,
+    head_seq: u64,
+    head_hmac: &str,
+    best_commit: &str,
+    best_score: f64,
+) -> Result<(), String> {
+    record_discovery_anchor(run_dir, head_seq, head_hmac, best_commit, best_score)
+}
+
+/// Checks rollback and same-sequence substitution; a later head needs daemon chain verification.
+pub fn verify_discovery_anchor(
+    run_dir: &Path,
+    head_seq: u64,
+    head_hmac: &str,
+) -> Result<&'static str, String> {
+    let path = discovery_anchor_file(run_dir)?;
+    let text = match std::fs::read_to_string(path) {
+        Ok(text) => text,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok("unanchored"),
+        Err(e) => return Err(e.to_string()),
+    };
+    let mut anchored = false;
+    let run = run_dir.canonicalize().map_err(|e| e.to_string())?;
+    let mut matched = false;
+    for line in text.lines().filter(|l| !l.trim().is_empty()) {
+        let entry: serde_json::Value = serde_json::from_str(line)
+            .map_err(|e| format!("invalid Crux discovery anchor store: {e}"))?;
+        if !matches!(
+            entry["kind"].as_str(),
+            Some("discovery_ledger_anchor" | "coral_ledger_anchor")
+        ) {
+            continue;
+        }
+        if entry["run_dir"]
+            .as_str()
+            .is_none_or(|p| Path::new(p) != run)
+        {
+            continue;
+        }
+        let seq = entry["head_seq"]
+            .as_u64()
+            .ok_or("invalid anchor sequence")?;
+        anchored = true;
+        if head_seq < seq {
+            return Err("Crux discovery ledger truncation detected".into());
+        }
+        if head_seq == seq {
+            if entry["head_hmac"].as_str() != Some(head_hmac) {
+                return Err("Crux discovery ledger HMAC mismatch".into());
+            }
+            matched = true;
+        }
+    }
+    Ok(if matched {
+        "matched"
+    } else if anchored {
+        "ahead"
+    } else {
+        "unanchored"
+    })
+}
+
+pub fn verify_coral_anchor(
+    run_dir: &Path,
+    head_seq: u64,
+    head_hmac: &str,
+) -> Result<&'static str, String> {
+    verify_discovery_anchor(run_dir, head_seq, head_hmac)
+}
+
 /// Serializes appends so two tool events can't interleave lines or race versions.
 #[derive(Default)]
 pub struct ProvenanceState(pub Mutex<()>);
@@ -68,7 +222,7 @@ pub struct EnvInfo {
     pub python: Option<String>,
     /// OS and architecture, e.g. "macos-aarch64".
     pub platform: String,
-    /// Open Science app version that recorded this.
+    /// Crux app version that recorded this.
     pub app: String,
     /// Installed Python packages (pip freeze), content-addressed to a lockfile.
     #[serde(default, skip_serializing_if = "Option::is_none")]

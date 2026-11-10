@@ -12,9 +12,9 @@ use crate::runtime::RuntimeState;
 
 /// The bundle identifier every platform's data directory is named after. It is
 /// the same string as `tauri.conf.json`'s `identifier`, and it MUST stay that
-/// way: `osd` and the desktop app share one runtime root, so a session started
+/// way: `crux` and the desktop app share one runtime root, so a session started
 /// in one is visible in the other.
-pub const IDENTIFIER: &str = "com.ai4s.workbench";
+pub const IDENTIFIER: &str = "com.crux.desktop";
 
 struct Inner {
     data_dir: PathBuf,
@@ -63,7 +63,7 @@ impl Env {
         version: String,
     ) -> Result<Self, String> {
         let cwd = std::env::current_dir().map_err(|e| e.to_string())?;
-        let data_dir = resolve_data_dir(state_dir, std::env::var("OSD_STATE_DIR").ok(), &cwd)?;
+        let data_dir = resolve_data_dir(state_dir, state_dir_env_var(), &cwd)?;
         let resource_dir = match resource_dir {
             Some(d) => d,
             None => default_resource_dir()?,
@@ -71,7 +71,7 @@ impl Env {
         Ok(Env::new(data_dir, resource_dir, platform_document_dir(), version))
     }
 
-    /// `<data dir>` — e.g. `~/Library/Application Support/com.ai4s.workbench`.
+    /// `<data dir>` — e.g. `~/Library/Application Support/com.crux.desktop`.
     pub fn data_dir(&self) -> &Path {
         &self.0.data_dir
     }
@@ -134,7 +134,14 @@ fn platform_data_dir() -> Result<PathBuf, String> {
 /// onboarding).
 pub fn state_dir_override(flag: Option<PathBuf>) -> Option<PathBuf> {
     let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::new());
-    requested_state_dir(flag, std::env::var("OSD_STATE_DIR").ok()).map(|dir| absolutize(dir, &cwd))
+    requested_state_dir(flag, state_dir_env_var()).map(|dir| absolutize(dir, &cwd))
+}
+
+fn state_dir_env_var() -> Option<String> {
+    std::env::var("CRUX_STATE_DIR")
+        .ok()
+        .filter(|v| !v.is_empty())
+        .or_else(|| std::env::var("OSD_STATE_DIR").ok())
 }
 
 /// The raw override, in precedence order: the explicit argument first, then the
@@ -356,9 +363,9 @@ mod tests {
         assert_eq!(resource_root_near(&archive), Some(archive_resources));
 
         // 2. macOS .app — the binary in Contents/MacOS, resources in Contents/Resources.
-        let macos = root.join("Open Science.app/Contents/MacOS");
+        let macos = root.join("Crux.app/Contents/MacOS");
         std::fs::create_dir_all(&macos).unwrap();
-        let app_resources = root.join("Open Science.app/Contents/Resources");
+        let app_resources = root.join("Crux.app/Contents/Resources");
         marker(&app_resources);
         assert_eq!(
             resource_root_near(&macos).map(|p| std::fs::canonicalize(p).unwrap()),
@@ -371,11 +378,11 @@ mod tests {
         marker(&windows);
         assert_eq!(resource_root_near(&windows), Some(windows.clone()));
 
-        // 4. Linux package: /usr/bin/osd with resources under /usr/lib/<Product>/.
+        // 4. Linux package: /usr/bin/crux with resources under /usr/lib/<Product>/.
         let usr = root.join("usr");
         let bin = usr.join("bin");
         std::fs::create_dir_all(&bin).unwrap();
-        let product = usr.join("lib").join("Open Science");
+        let product = usr.join("lib").join("Crux");
         marker(&product);
         // A sibling that is NOT a resource root must not be picked.
         std::fs::create_dir_all(usr.join("lib").join("something-else")).unwrap();

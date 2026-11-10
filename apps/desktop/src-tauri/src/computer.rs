@@ -6,7 +6,7 @@
 // The two permissions do NOT live in the same place, and that is measured, not
 // assumed:
 //
-//   Accessibility  → `Open Science Computer Use.app`, the separate helper. macOS
+//   Accessibility  → `Crux Computer Use.app`, the separate helper. macOS
 //                    judges it against that bundle's own identity, so the
 //                    workbench never asks for the right to read every window.
 //   Screen Recording → THIS app. macOS attributes screen capture to the
@@ -55,7 +55,7 @@ mod platform_impl {
     use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
     use tauri::AppHandle;
 
-    const HELPER_APP_NAME: &str = "Open Science Computer Use.app";
+    const HELPER_APP_NAME: &str = "Crux Computer Use.app";
 
     /// How long to wait for the helper to write its answer. It is a GUI app
     /// launch, so the first one after an update can be slow; past this the

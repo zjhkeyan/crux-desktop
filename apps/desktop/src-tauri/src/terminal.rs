@@ -1,6 +1,6 @@
 // A real shell in a pane.
 //
-// The contract is borrowed from Orca: a terminal is a PTY the UI owns by id —
+// The contract is borrowed from Crux: a terminal is a PTY the UI owns by id —
 // open it, write to it, resize it, close it, and read its bytes as they arrive.
 // So is where the PTY lives: in the terminal host (`osd termd`, osd-core
 // termd.rs), a background process that outlives the app. An update, a crash or
@@ -73,11 +73,11 @@ fn data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     app.path().app_data_dir().map_err(|e| e.to_string())
 }
 
-/// The bundled `osd`, which runs the host. Tauri bundles it next to the app
+/// The bundled `crux`, which runs the host. Tauri bundles it next to the app
 /// binary under its plain name (in development: `scripts/dev/build-osd-sidecar.sh`).
 fn bundled_osd() -> Result<PathBuf, String> {
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
-    let name = if cfg!(windows) { "osd.exe" } else { "osd" };
+    let name = if cfg!(windows) { "crux.exe" } else { "crux" };
     let path = exe.parent().ok_or("no app folder")?.join(name);
     if path.is_file() {
         Ok(path)

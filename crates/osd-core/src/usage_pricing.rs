@@ -8,7 +8,7 @@
 //!    computed here cannot disagree about the same model, and so a vendor price
 //!    change reaches this app without anyone editing Rust.
 //!
-//! 2. **The table below**, ported from Orca (MIT,
+//! 2. **The table below**, ported from Crux (MIT,
 //!    `src/main/{claude,codex}-usage/*-model-pricing.ts`), for the three things
 //!    the catalog does not answer — measured against the cached file, not
 //!    assumed:

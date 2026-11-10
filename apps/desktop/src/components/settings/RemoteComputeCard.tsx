@@ -21,6 +21,9 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/cn";
 import { inputCls } from "./inputCls";
 import { Section } from "./Section";
+import { ConnectWizard, PreflightCard, TaskStudio } from "@/components/remote";
+import { isGatewayWeb } from "@/lib/webMode";
+import type { RemotePreflightReport, RemoteRunOptions } from "@/lib/gatewayHttp";
 
 /** The `t` type the plain (non-component) helpers below take as a parameter. */
 type TFn = TFunction<["settings", "common"]>;
@@ -38,6 +41,9 @@ export function RemoteComputeCard() {
   const [draft, setDraft] = useState("");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [wizard, setWizard] = useState(false);
+  const [remoteHost, setRemoteHost] = useState<string>();
+  const [launchConfig, setLaunchConfig] = useState<{ report: RemotePreflightReport; options: RemoteRunOptions }>();
   // Per-host live probe + expand/queue state, keyed by host.
   const [probes, setProbes] = useState<Record<string, ComputeProbe | "loading">>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -154,8 +160,17 @@ export function RemoteComputeCard() {
 
   return (
     <Section title={t("remoteCompute.title")} hint={t("remoteCompute.subtitle")} flush>
+        {(isTauri || isGatewayWeb) && <div className="space-y-3 border-b border-border p-3">
+          <button type="button" aria-expanded={wizard} className={btnAccent()} onClick={() => setWizard(!wizard)}>{t(`remoteCompute.cruxLink.${wizard ? "close" : "connect"}`)}</button>
+          {wizard && <>
+            <p className="text-sm text-muted">{t("remoteCompute.cruxLink.hint")}</p>
+            <ConnectWizard onConnected={(host) => { setRemoteHost(host); setLaunchConfig(undefined); }} />
+            {remoteHost && <PreflightCard key={remoteHost} host={remoteHost} onContinue={(report, options) => setLaunchConfig({ report, options })} />}
+            {remoteHost && launchConfig && <TaskStudio key={JSON.stringify([remoteHost, launchConfig.options])} host={remoteHost} preflight={launchConfig.report} options={launchConfig.options} />}
+          </>}
+        </div>}
         {!isTauri ? (
-          <p className="px-4 py-3 text-[13px] text-muted">{t("remoteCompute.unavailable")}</p>
+          !isGatewayWeb && <p className="px-4 py-3 text-[13px] text-muted">{t("remoteCompute.unavailable")}</p>
         ) : (
           <>
             <div>

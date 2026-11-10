@@ -15,8 +15,8 @@ pub fn run(args: &Args) -> Result<(), String> {
     match args.sub.as_str() {
         "set" | "login" => set(args),
         "ls" | "list" => list(args),
-        "" => Err("usage: osd auth set <provider> --key <api-key> [--model <provider/model>]".into()),
-        other => Err(format!("unknown command `osd auth {other}`")),
+        "" => Err("usage: crux auth set <provider> --key <api-key> [--model <provider/model>]".into()),
+        other => Err(format!("unknown command `crux auth {other}`")),
     }
 }
 
@@ -76,7 +76,7 @@ fn set(args: &Args) -> Result<(), String> {
         println!("A server is running here — restart it for the key to take effect.");
     }
     if args.value("model").is_none() {
-        println!("Pick a default model with --model <provider/model>, or per turn with `osd session send --model`.");
+        println!("Pick a default model with --model <provider/model>, or per turn with `crux session send --model`.");
     }
     Ok(())
 }
@@ -85,7 +85,7 @@ fn list(args: &Args) -> Result<(), String> {
     let env = crate::env(args)?;
     let providers = runtime::configured_providers(&env)?;
     if providers.is_empty() {
-        println!("No providers configured. Set one with `osd auth set <provider> --key <api-key>`,");
+        println!("No providers configured. Set one with `crux auth set <provider> --key <api-key>`,");
         println!("or export its API key before starting the server — the runtime inherits it.");
         return Ok(());
     }

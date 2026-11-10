@@ -7,7 +7,7 @@ import type { MountedEditor } from "./monacoSetup";
 /**
  * A real editor for a real file.
  *
- * Monaco — the editor VS Code runs, and the one Orca uses. Everything that
+ * Monaco — the editor VS Code runs, and the one Crux uses. Everything that
  * makes editing a file bearable comes with it: find and replace, multiple
  * cursors, column selection, folding, a minimap, sticky scroll, bracket
  * colouring, a suggest widget, and a context menu that knows what it is looking

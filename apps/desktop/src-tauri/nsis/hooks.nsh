@@ -32,6 +32,7 @@
 !macroend
 
 !macro KillAllSidecars
+  !insertmacro KillSidecarProcess "crux.exe"
   !insertmacro KillSidecarProcess "opencode.exe"
   !insertmacro KillSidecarProcess "agent-browser.exe"
   !insertmacro KillSidecarProcess "uv.exe"

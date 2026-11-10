@@ -1,5 +1,5 @@
 #!/bin/sh
-# Install Open Science Desktop on Linux for the current user — no root, no
+# Install Crux Desktop on Linux for the current user — no root, no
 # package manager, nothing outside $HOME.
 #
 #   curl -fsSL https://raw.githubusercontent.com/ai4s-research/open-science/master/scripts/install.sh | sh
@@ -26,7 +26,7 @@ set -eu
 REPO="ai4s-research/open-science"
 # Shared with the desktop app's own wrapper (cli_shim.rs), so whichever wrote
 # `osd` last, the other recognizes it as ours and may replace it.
-SIGNATURE="Open Science Desktop CLI wrapper"
+SIGNATURE="Crux Desktop CLI wrapper"
 
 DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 PREFIX="$DATA/open-science"
@@ -57,7 +57,7 @@ if [ "$mode" = uninstall ]; then
   remove_ours "$BIN/osd"
   remove_ours "$BIN/open-science"
   remove_ours "$DESKTOP_ENTRY"
-  say "Removed Open Science Desktop from $PREFIX."
+  say "Removed Crux Desktop from $PREFIX."
   say "Your workspace (~/Documents/OpenScience) and settings were left in place."
   exit 0
 fi
@@ -137,7 +137,7 @@ write_wrapper() {
 # $SIGNATURE. A wrapper, not a symlink: osd finds its sidecars and
 # bundled resources next to the real executable.
 if [ ! -x "$binary" ]; then
-	echo "Open Science Desktop is no longer installed; removing this leftover command." >&2
+	echo "Crux Desktop is no longer installed; removing this leftover command." >&2
 	rm -f -- "\$0"
 	exit 127
 fi
@@ -158,8 +158,8 @@ if [ "$mode" = desktop ]; then
 [Desktop Entry]
 # $SIGNATURE
 Type=Application
-Name=Open Science
-Comment=Open Science Desktop
+Name=Crux
+Comment=Crux Desktop
 Exec="$app_bin"
 Icon=$dest/usr/share/icons/hicolor/128x128/apps/ai4s-workbench.png
 StartupWMClass=ai4s-workbench
@@ -169,7 +169,7 @@ EOF
 fi
 
 say ""
-say "Installed Open Science Desktop $version ($mode) in $dest"
+say "Installed Crux Desktop $version ($mode) in $dest"
 case ":$PATH:" in
   *":$BIN:"*) ;;
   *) say "Add $BIN to your PATH:  export PATH=\"$BIN:\$PATH\"" ;;

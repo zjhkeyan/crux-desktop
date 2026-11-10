@@ -17,7 +17,7 @@ import {
 import type { CodeEditorHandle } from "./CodeEditor";
 
 /**
- * The formatting row above a markdown file, borrowed from Orca's markdown
+ * The formatting row above a markdown file, borrowed from Crux's markdown
  * editor — the same actions in the same order: paragraph and headings, then
  * the character styles, then the three list kinds, then quote, link and code.
  *

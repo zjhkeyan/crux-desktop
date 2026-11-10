@@ -165,7 +165,7 @@ fn describe_error(status: u16, body: &[u8]) -> String {
         .and_then(|v| v.get("error").and_then(|e| e.as_str()).map(str::to_string))
         .unwrap_or_else(|| String::from_utf8_lossy(body).trim().to_string());
     match status {
-        401 => "the token was rejected (401). Check --token, or run `osd login`.".to_string(),
+        401 => "the token was rejected (401). Check --token, or run `crux login`.".to_string(),
         403 if detail.contains("read-only") => {
             "this token is read-only (403); it can list and read, but not run anything.".to_string()
         }
@@ -208,7 +208,7 @@ fn resolve(args: &Args) -> Result<(String, String, String), String> {
             .value("token")
             .or_else(|| env_var("OSD_TOKEN"))
             .or_else(|| stored().map(|(_, t)| t))
-            .ok_or("no token: pass --token, set OSD_TOKEN, or run `osd login`")?;
+            .ok_or("no token: pass --token, set OSD_TOKEN, or run `crux login`")?;
         return Ok((base, token, "--gateway/OSD_GATEWAY".into()));
     }
     if let Some((base, token)) = stored() {
@@ -220,12 +220,12 @@ fn resolve(args: &Args) -> Result<(String, String, String), String> {
     // The app has served this machine before but is not listening now: it is
     // closed, or restarting (an update). Its terminals keep running meanwhile.
     if local_gateway_known(args) {
-        return Err("the Open Science app is not running, or is restarting. Its terminals keep \
+        return Err("the Crux app is not running, or is restarting. Its terminals keep \
                     running; retry in a few seconds once the app is open."
             .into());
     }
-    Err("no gateway found. Start one with `osd server`, or point at one with \
-         `osd login --gateway <url> --token <token>`."
+    Err("no gateway found. Start one with `crux server`, or point at one with \
+         `crux login --gateway <url> --token <token>`."
         .into())
 }
 

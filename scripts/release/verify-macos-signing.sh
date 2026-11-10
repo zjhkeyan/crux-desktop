@@ -50,7 +50,7 @@ done
 # the one component that holds Accessibility and Screen Recording. A TCC grant
 # follows the signature, so an unsigned or wrongly-signed helper means the user
 # grants the permission once and loses it on the next launch.
-helper_path="$app_path/Contents/Resources/computer-use/Open Science Computer Use.app"
+helper_path="$app_path/Contents/Resources/computer-use/Crux Computer Use.app"
 if [[ -d "$helper_path" ]]; then
   /usr/bin/codesign --verify --deep --strict --verbose=2 "$helper_path"
   verify_developer_id "$helper_path" "$app_team"

@@ -7,7 +7,7 @@ import { useLayoutStore } from "@/lib/layout";
 import { isGatewayWeb } from "@/lib/webMode";
 
 /**
- * Clickable URLs and local paths in conversations and terminals, as in Orca:
+ * Clickable URLs and local paths in conversations and terminals, as in Crux:
  * a link is underlined on hover, a click opens a small menu (the full target
  * and what can be done with it), ⌘-click takes the first action at once and
  * ⇧⌘-click opens a file in its default app.

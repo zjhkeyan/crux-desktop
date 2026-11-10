@@ -64,7 +64,7 @@ and search tools instead.";
 
 const BLOCKED_TOOLS: &[&str] = &[
     // These can enumerate/switch another conversation or attach to a browser
-    // that the user opened outside Open Science Desktop.
+    // that the user opened outside Crux Desktop.
     "agent_browser_session",
     "agent_browser_session_list",
     "agent_browser_session_id",
@@ -378,7 +378,7 @@ fn protect_tool_list(response: &mut Value, include_inventory: bool) {
         tools.push(json!({
             "name": INVENTORY_TOOL,
             "title": "Browser resources",
-            "description": "Inspect the current conversation's managed browser and tabs before deciding whether to open, reuse, or close it. Other conversations are reported without URLs or titles. Browsers opened by the user outside Open Science Desktop are never inspected or controlled.",
+            "description": "Inspect the current conversation's managed browser and tabs before deciding whether to open, reuse, or close it. Other conversations are reported without URLs or titles. Browsers opened by the user outside Crux Desktop are never inspected or controlled.",
             "inputSchema": {
                 "type": "object",
                 "properties": {},

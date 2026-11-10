@@ -7,7 +7,7 @@ const MIN_SLICED_STRING_LENGTH = 13
  *
  * Why: `bigChunk.slice(a, b)` is a V8 SlicedString that pins the whole parent, so
  * retaining a few KiB of tail can pin megabytes of already-consumed provider
- * output. Ported from Orca, minus its renderer/mobile fallback — this module only
+ * output. Ported from Crux, minus its renderer/mobile fallback — this module only
  * ever runs where `Buffer` exists.
  */
 export function ownRetainedString(value: string): string {

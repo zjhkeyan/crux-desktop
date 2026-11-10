@@ -8,7 +8,7 @@ const CLIPBOARD_TEXT_WRITE_TOO_LARGE_ERROR = 'Clipboard text is too large to cop
 /**
  * Reject a paste payload that is too large to put on the clipboard.
  *
- * Upstream (Orca) measured this incrementally and yielded to the event loop
+ * Upstream (Crux) measured this incrementally and yielded to the event loop
  * between batches, because the check ran on an Electron main process that was
  * also drawing a UI. Here it runs inside the agent's own tool process, where a
  * single `Buffer.byteLength` blocks nothing worth protecting.

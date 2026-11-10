@@ -48,6 +48,7 @@ import { BandView } from "./BandView";
 import { QCodeView } from "./QCodeView";
 import { AnomalyMapView } from "./AnomalyMapView";
 import { PhaseView } from "./PhaseView";
+import { CruxResearchArtifactView } from "./CruxResearchViews";
 import { useScrollMemory } from "@/lib/scrollMemory";
 import { useWheelChain } from "@/lib/wheelChain";
 import { cn } from "@/lib/cn";
@@ -113,7 +114,7 @@ export function FilePreviewInspector({
   const needsText =
     kind === "table" || kind === "text" || kind === "html" || kind === "markdown" ||
     kind === "molecule" || kind === "genome" || kind === "qcode" || kind === "anomaly" ||
-    kind === "phase";
+    kind === "phase" || kind === "crux-json";
   const needsBytes =
     kind === "docx" || kind === "xlsx" || kind === "pptx" || kind === "mesh" ||
     kind === "fits" || kind === "dos" || kind === "bands";
@@ -139,7 +140,7 @@ export function FilePreviewInspector({
   const [draft, setDraft] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   /** The text this pane last wrote, so a reload can tell OUR write from an
-   *  agent's. Borrowed from Orca's `editor-changed-on-disk-mark`. */
+   *  agent's. Borrowed from Crux's `editor-changed-on-disk-mark`. */
   const savedRef = useRef<string | null>(null);
   /** Someone else wrote the file while it was open here. In this app that is
    *  routine — the agent edits the files you are reading — so the editor says
@@ -302,7 +303,7 @@ export function FilePreviewInspector({
     }
   }, [draft, saving, autoSave, data.path, data.root]);
 
-  /** Autosave, as Orca does (`editor-autosave.ts`) rather than making the user
+  /** Autosave, as Crux does (`editor-autosave.ts`) rather than making the user
    *  find a Save button. Debounced so a keystroke is not a disk write, and
    *  suspended while the file has changed underneath us. */
   useEffect(() => {
@@ -404,7 +405,7 @@ export function FilePreviewInspector({
         {/* Title and kind on the left; state and actions pushed right, as in
             every other pane header. */}
         <div className="min-w-0 flex-1" />
-        {/* What the file is doing, in one word. Orca keeps this beside the path
+        {/* What the file is doing, in one word. Crux keeps this beside the path
             (`editor-content-dirty-state`); without it autosave is invisible and
             the reader cannot tell a saved file from a losing one. */}
         {/* A light, not a word. "Saving…/Saved" sat directly against the
@@ -539,7 +540,7 @@ export function FilePreviewInspector({
 }
 
 /** Kinds whose header offers Preview ↔ Code. */
-const TOGGLE_KINDS: ReadonlySet<PreviewKind> = new Set(["html", "markdown", "molecule", "genome"]);
+const TOGGLE_KINDS: ReadonlySet<PreviewKind> = new Set(["html", "markdown", "molecule", "genome", "crux-json"]);
 
 /** How a hand edit signs the provenance trail. A stable id, not UI copy: the
  *  history panel groups by it exactly as it groups an agent's tool name. */
@@ -661,6 +662,27 @@ function Body({
   if (kind === "phase") {
     return text !== null ? (
       <PhaseView filename={filename} text={text} />
+    ) : (
+      <Note text={t("filePreview.desktopOnly")} />
+    );
+  }
+  if (kind === "crux-json") {
+    if (showCode) {
+      return text !== null ? (
+        <SourceView
+          text={text}
+          draft={draft}
+          onDraftChange={onDraftChange}
+          onSave={onSave}
+          language={language ?? "json"}
+          filename={filename}
+        />
+      ) : (
+        <Note text={t("filePreview.sourceDesktopOnly")} />
+      );
+    }
+    return text !== null ? (
+      <CruxResearchArtifactView filename={filename} text={text} />
     ) : (
       <Note text={t("filePreview.desktopOnly")} />
     );
@@ -850,7 +872,7 @@ function SourceView({
   language?: string;
   filename: string;
   /** Markdown: a formatting toolbar, a placeholder, and no line numbers —
-   *  this is prose, and it is edited the way Orca edits it. */
+   *  this is prose, and it is edited the way Crux edits it. */
   prose?: boolean;
 }) {
   const { t } = useTranslation(["inspector", "common"]);

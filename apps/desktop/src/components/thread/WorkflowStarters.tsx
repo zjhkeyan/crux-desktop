@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { ChevronRight, FileSearch, FlaskConical, Globe2, LineChart } from "lucide-react";
-import { installExample, isTauri } from "@/lib/tauri";
+import { Atom, ChevronRight, FlaskConical, Orbit } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/cn";
 
@@ -14,48 +13,36 @@ export interface WorkflowStarter {
   prepare?: () => Promise<void>;
 }
 
-/** One-click full-workflow prompts (P0-1): a single request that carries the
- *  agent through data → code → figure → report, all inside the app. */
+/** One-click full-workflow prompts (P0-1): computational chemistry & algorithm
+ *  optimization workflows that carry the agent through code → verification → figure → report. */
 export const WORKFLOW_STARTERS: WorkflowStarter[] = [
   {
     id: "demo",
-    icon: <FlaskConical size={17} strokeWidth={1.75} />,
+    icon: <Atom size={17} strokeWidth={1.75} />,
     prompt:
-      "Run a complete demo analysis end to end: simulate a small dose–response dataset in Python, " +
-      "analyze it (fit + summary statistics), save one publication-quality figure as demo_analysis/figure1.png, " +
-      "and write demo_analysis/report.md summarizing the findings — every number in the report must come from " +
-      "the code you ran. Keep all files in the workspace.",
+      "Run a first-principles computational chemistry transition-state (TS) and activation barrier workflow: " +
+      "set up reactant/product structures, run saddle-point optimization (Sella / GPU4PySCF or harmonic TS model), " +
+      "verify the single imaginary frequency (nu^‡ < 0) and IRC path connectivity, compute Delta E^‡ and Delta G^‡, " +
+      "save a publication-grade reaction energy profile as ts_analysis/figure1.png, and write ts_analysis/report.md " +
+      "with every barrier and frequency traced to the calculation output.",
   },
   {
     id: "analyze",
-    icon: <LineChart size={17} strokeWidth={1.75} />,
+    icon: <FlaskConical size={17} strokeWidth={1.75} />,
     prompt:
-      "Analyze the data file I added to the workspace end to end: explore it, run the analysis in code, " +
-      "save at least one figure as a PNG, and write report.md with the findings — every number traced to " +
-      "the code that produced it. Ask me which file to use if there is more than one candidate.",
-  },
-  {
-    id: "audit",
-    icon: <FileSearch size={17} strokeWidth={1.75} />,
-    prompt:
-      "Use the traceability-review skill to audit the report or manuscript in my workspace: resolve every " +
-      "citation, flag numbers with no traceable source, and check figures against the code that generated them. " +
-      "Ask me which document to audit if there is more than one candidate.",
+      "Run a molecular property prediction (QSAR / ADMET) and Bayesian reaction optimization workflow on the dataset " +
+      "in the workspace: build physicochemical and fingerprint descriptors, benchmark surrogate models with cross-validation, " +
+      "propose next-batch candidate conditions via Expected Improvement / UCB, save parity and acquisition plots as PNGs, " +
+      "and write report.md with all metrics traced to the execution logs.",
   },
   {
     id: "example-climate",
-    icon: <Globe2 size={17} strokeWidth={1.75} />,
+    icon: <Orbit size={17} strokeWidth={1.75} />,
     prompt:
-      "Analyze the real climate dataset at climate-trends/data/gistemp_global_means.csv " +
-      "(NASA GISTEMP v4 global land–ocean temperature anomalies in °C vs the 1951–1980 mean; " +
-      "the header is on line 2 and missing values are `***` — see climate-trends/README.md). " +
-      "Load the annual J-D series, quantify the warming rate (°C/decade) over the full record and " +
-      "over 1975–present, compare decadal means, save one publication-quality figure as " +
-      "climate-trends/warming_trend.png, and write climate-trends/report.md citing the dataset " +
-      "source — every number must come from the code you ran.",
-    prepare: async () => {
-      if (isTauri) await installExample("climate-trends");
-    },
+      "Run a high-precision non-convex geometric optimization and exact certification workflow (modeled on `work/pack26` N=26 circle packing " +
+      "r* = 0.09628641 and `work/thomson15` Tammes-15 spherical code d* = 0.902656188): combine multi-start L-BFGS-B / SLSQP basin-hopping " +
+      "with a symmetry ansatz, verify pairwise and boundary constraints to 60 decimal places with `mpmath`, render the contact-graph figure, " +
+      "and write a concise optimality report.",
   },
 ];
 

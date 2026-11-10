@@ -50,12 +50,12 @@ pub fn run(args: &Args) -> Result<(), String> {
             if current != requested {
                 return Err(format!(
                     "another gateway is running on port {live} (the desktop app, or another \
-                     `osd server`) and this machine has one active workspace, currently {current}. \
+                     `crux server`) and this machine has one active workspace, currently {current}. \
                      Repointing it would move that gateway's workspace too. Quit it first, or \
-                     drive it instead: osd --gateway http://127.0.0.1:{live} … Parallel work \
+                     drive it instead: crux --gateway http://127.0.0.1:{live} … Parallel work \
                      does not need a second workspace: this server already runs many sessions \
-                     at once, each pinned to its own project folder (osd project new <name>, \
-                     then osd session new --project <name>)."
+                     at once, each pinned to its own project folder (crux project new <name>, \
+                     then crux session new --project <name>)."
                 ));
             }
         }
@@ -94,7 +94,7 @@ pub fn run(args: &Args) -> Result<(), String> {
     if let Some(other) = live_other_gateway(&env).filter(|p| Some(*p) != requested_port) {
         eprintln!(
             "note: another gateway is already running on port {other} (the desktop app, or \
-             another `osd server`). They share one workspace and one session database, and it \
+             another `crux server`). They share one workspace and one session database, and it \
              keeps the recorded address — reach THIS server with an explicit \
              --gateway http://127.0.0.1:<port below>."
         );
@@ -131,7 +131,7 @@ pub fn run(args: &Args) -> Result<(), String> {
         if !has_credentials {
             eprintln!(
                 "note: the isolated state dir {} has no credentials yet. Give it its own key: \
-                 OSD_STATE_DIR={} osd auth set <provider> --key <api-key> — or just export the \
+                 CRUX_STATE_DIR={} crux auth set <provider> --key <api-key> — or just export the \
                  provider's own variable (ANTHROPIC_API_KEY=…) before starting; the sidecar \
                  inherits it. Nothing is copied from the desktop install.",
                 state_dir.display(),
@@ -177,7 +177,7 @@ pub fn run(args: &Args) -> Result<(), String> {
     if assets::is_empty() {
         eprintln!("note: this build carries no web client; /v1 is served, / is not.");
     }
-    println!("Open Science Desktop — headless\n");
+    println!("Crux Desktop — headless\n");
     println!("  workspace   {}", workspace.display());
     println!("  runtime     {sidecar}");
     println!("  access      {mode}");
@@ -189,7 +189,7 @@ pub fn run(args: &Args) -> Result<(), String> {
     }
     println!("  token       {token}");
     println!("\nOpen the URL with ?token=<token>, or point a CLI at it:");
-    println!("  osd --gateway http://127.0.0.1:{port} --token {token} session ls");
+    println!("  crux --gateway http://127.0.0.1:{port} --token {token} session ls");
     println!("\nCtrl-C to stop.");
 
     wait_for_shutdown();

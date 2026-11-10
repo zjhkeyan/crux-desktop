@@ -334,10 +334,11 @@ export function SessionView({
   const trouble = !connected && !connecting;
   const slowStart = useSlowStart(connecting);
 
-  // A newly-created session (draft's first send) binds onto this leaf; the
-  // wrapper then follows it into the URL and opens its folder.
+  // A newly-created session (draft's first send, or replacement for a session
+  // that was deleted on the server) binds onto this leaf; the wrapper then
+  // follows it into the URL and opens its folder.
   const bindIfCreated = (created: string | null) => {
-    if (created && sid === null) bindSession(leafId, created);
+    if (created && created !== sid) bindSession(leafId, created);
   };
   // Split THIS pane: dock a fresh DRAFT pane on the given edge. No session or
   // folder is created until that pane's first send (#2), and it carries its own

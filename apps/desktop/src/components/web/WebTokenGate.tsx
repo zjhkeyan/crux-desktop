@@ -82,7 +82,7 @@ export function WebTokenGate({ onConnect }: { onConnect: () => void }) {
         <div className="flex items-center gap-2">
           <img src={logo} alt="" className="h-6 w-6" />
           {/* eslint-disable-next-line i18next/no-literal-string -- product brand name, not translated across locales (see AGENTS.md) */}
-          <span className="font-serif text-[17px] font-semibold">Open Science</span>
+          <span className="font-serif text-[17px] font-semibold">Crux</span>
         </div>
 
         <h1 className="mt-12 text-[22px] font-semibold leading-tight">

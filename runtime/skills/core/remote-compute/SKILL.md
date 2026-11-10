@@ -5,12 +5,101 @@ description: Use when the user asks to run, submit, monitor, or cancel a job on 
 
 # Remote compute over SSH
 
-Run heavy work on the user's own machines over SSH with their own keys or their
-own interactive sign-in — you never install anything remote and never handle
-credentials yourself. A machine may be a plain server (CPU or GPU, no scheduler)
-or a Slurm cluster.
+Run heavy work on the user's own machines with Crux Link or SSH and their own
+keys or interactive sign-in. Never handle credentials yourself. A machine may
+be a plain server (CPU or GPU, no scheduler) or a Slurm cluster. Engine bootstrap
+and key installation go through the approved Crux Link setup flow.
+
+## Crux Link · Windows, macOS, Linux, and Discovery
+
+Prefer **Settings → Remote compute → Connect with Crux Link (Wizard)** for a new
+server. Import an SSH config host (including VS Code Remote-SSH hosts), or enter
+`user@host:port`, sign-in method, and a label. The user must compare the displayed
+`SHA256:…` fingerprint with their administrator's published fingerprint before
+trusting it. Never bypass host-key checking. Passwords, OTP, and Duo prompts stay
+in the app's sign-in dialog; never request or copy them into a command.
+
+The wizard can pair a dedicated ed25519 key and pin the resolved login node
+(`hostname -f`) behind a cluster VIP. Unpair removes only that managed key, not
+the user's other keys. If site policy requires 2FA on every connection, keep the
+authenticated Link and ask the user to sign in again when needed.
+
+Use the Crux remote commands on **Windows**: no ControlMaster, local bash,
+`rsync`, or manual macOS/Linux tool setup is required. On a gateway web client,
+paths and SSH configuration belong to the gateway host; a browser cannot select
+or sync a Windows filesystem folder. Select a remote Linux path there.
+
+```text
+crux remote pair <host>
+crux remote status <host>
+crux remote exec <host> -- nvidia-smi
+crux remote put <host> <local-path> <remote-path>
+crux remote get <host> <remote-path> <local-path>
+crux discovery doctor --on <host>
+crux discovery validate <remote-task-dir> --on <host>
+crux discovery start -c <remote-task-dir>/task.yaml --on <host>
+crux discovery status --on <host>
+```
+
+Check `crux remote <verb> --help` for the installed version's arguments before
+execution. Pass arguments separately; never interpolate an untrusted host, path,
+or command into a shell string. Agent-origin commands remain subject to the
+discovery allowlist and approval policy; a refusal is not permission to bypass it.
+
+The automatic preflight checks Linux/architecture, GPUs, Slurm partitions,
+scratch free space, runtime availability, and outbound HTTPS. Do not infer
+engine readiness when the report omits it. Prefer scratch when HOME has less
+than 5 GiB free. Task Studio selects the project, evaluation preset, metric,
+maximize/minimize direction, agent count, and model before launch. The task must
+include a valid grader and pass validation; a YAML preview alone is not proof.
+
+### Slurm Allocation Pool
+
+- **(a) Offload evals only**: agents remain on the login node; evaluations reuse
+  an existing allocation with `srun --jobid <allocation-id> --overlap <command>`.
+  Confirm that login-node agents comply with site policy.
+- **(b) Full swarm**: agents and evaluations run inside a Slurm job. Prefer this
+  for more than two agents or restrictive login-node policies.
+- Reuse the allocation pool instead of submitting a fresh `sbatch` for each
+  evaluation. Check its job ID, state, remaining time, GPUs, and scratch space.
+  Never reuse or cancel someone else's allocation. Expired allocations need a
+  new allocation before evaluations can resume.
+
+### E1 / E2 / E3 egress and sleep resilience
+
+Use the explicit connection mode reported by the server; older protocol notes
+use different E1/E2 numbering. The current UI uses:
+
+| Mode | Display | Laptop sleep |
+| --- | --- | --- |
+| E1 `direct` | Direct AI access from the server | Sleep-safe while RUNNING |
+| E2 `tunnel` | AI routed through this PC | Keep PC awake; auto-pause on disconnect |
+| E3 `relay` | A reachable server relay | Sleep-safe while RUNNING |
+
+Set a maximum USD budget for direct or tunnel runs when requested. Provider
+credentials stay in the approved keychain/broker or protected in-memory server
+flow; never put them in task YAML, environment variables, argv, logs, or exports.
+Unknown model pricing must be resolved by the backend before starting a capped
+run; do not invent a price or claim a cap is enforced from the UI alone.
+
+`HOLDING` and `PAUSED_NO_EGRESS` mean wait for reconnect, not a crashed agent.
+`PAUSED_AUTH` requires provider sign-in before resuming. `PAUSED_BUDGET` requires
+an explicitly increased cap above both the old cap and accrued cost. `RESUMING`
+is transitional; do not label it RUNNING. These pauses must not become crash
+reports or failure constraints, and active clocks remain frozen while paused.
+
+Use **Harvest Best Result** to fetch the confirmed winner, verified archive
+insights, and report into the workspace. Applying the winning diff to
+`crux/best-<run-id>` and downloading large `*.pt` / `*.safetensors` checkpoints
+are separate explicit choices. Do not overwrite local work or clean the server
+as part of harvesting. Record the result and ledger anchor in provenance using
+the host harvest operation, then follow §4 for any separately fetched job files.
 
 ## 0 · Always run ssh through the app's config
+
+The remaining instructions are the legacy POSIX SSH path. Prefer Crux Link on
+Windows. Do not start a second SSH connection while an authenticated Link is in
+use; use `crux remote exec|put|get` so traffic shares that connection.
 
 Every `ssh`, `scp` and `rsync` below passes `-F "$OPENSCIENCE_SSH_CONFIG"`. Write
 it as `$SSHCFG` after defining it once per command you send:
@@ -34,9 +123,8 @@ It asks the desktop UI to prompt the user, and returns once the shared
 connection is up — then retry your command unchanged.
 
 Two errors that sign-in cannot fix, so do not call the tool for them: a host-key
-error (`Host key verification failed` — the user must verify the fingerprint in
-their own terminal once) and a network error (unreachable, timed out, unknown
-host).
+error (`Host key verification failed` — use the wizard's fingerprint verification)
+and a network error (unreachable, timed out, unknown host).
 
 ## 1 · Pick the machine
 

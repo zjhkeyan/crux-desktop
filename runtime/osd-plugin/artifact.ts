@@ -19,13 +19,14 @@ export interface PresentInput {
 /** The host UI contract, attached to every model request: models sometimes
  *  mistake reading a file or linking its path for displaying it, and the tool
  *  description alone does not stop that. */
-export const ARTIFACT_PRESENTATION_SYSTEM = `Open Science Desktop can display workspace files through the present_artifact tool.
+export const ARTIFACT_PRESENTATION_SYSTEM = `Crux Desktop can display workspace files through the present_artifact tool.
 - If the user asks to show, display, render, preview, or open an artifact in the chat/conversation, call present_artifact with display="inline".
 - If the user asks for a panel or side-by-side view in the current Screen, call present_artifact with display="panel", target="current-screen", and the placement they asked for: placement="bottom" for below/underneath/a bottom panel, otherwise placement="right".
 - If the artifact is already shown in a panel and the user asks to move it, call present_artifact again with the new placement; the host moves the open panel.
 - If the user asks for a new Screen, call it with target="new-screen". If they ask for a new or dedicated Session, call it with target="new-session"; the host creates the Session.
 - If you generate the artifact, create the file first, then call present_artifact in the same turn.
-- Reading a file, mentioning its path, or attaching a link does not display it. Never claim an artifact is displayed unless present_artifact completed successfully.`;
+- Reading a file, mentioning its path, or attaching a link does not display it. Never claim an artifact is displayed unless present_artifact completed successfully.
+- Language & style: When the user writes in Chinese, think and write directly in natural, fluent, rigorous Chinese academic/engineering prose (自然、流畅、严谨的中文学术与工程书面语). Do not emit stiff meta-narration ("我先说明计划...") or robotic stage banners ("📍 [Stage X/Y]"), and avoid English-to-Chinese translationese or telegraphic arrow chains (A → B → C).`;
 
 /** A workspace-relative path, resolved — or an error naming what is wrong. */
 export function workspacePath(directory: string, requestedPath: string): string {
@@ -44,7 +45,7 @@ export function workspacePath(directory: string, requestedPath: string): string 
 export const presentArtifactTool = {
   name: "present_artifact",
   description:
-    "Actually display an existing workspace artifact in the Open Science Desktop UI. You MUST call this tool when the user asks to show, display, render, preview, or open a file in the conversation or a Screen panel; reading the file or mentioning its path does not display it. Use inline for the conversation. For panel display, target can use the current Screen, create a new Screen with the source conversation, or create a real dedicated Agent Session in a new Screen. The file must already exist, and you must not claim it is displayed unless this call succeeds.",
+    "Actually display an existing workspace artifact in the Crux Desktop UI. You MUST call this tool when the user asks to show, display, render, preview, or open a file in the conversation or a Screen panel; reading the file or mentioning its path does not display it. Use inline for the conversation. For panel display, target can use the current Screen, create a new Screen with the source conversation, or create a real dedicated Agent Session in a new Screen. The file must already exist, and you must not claim it is displayed unless this call succeeds.",
   input: {
     type: "object",
     properties: {

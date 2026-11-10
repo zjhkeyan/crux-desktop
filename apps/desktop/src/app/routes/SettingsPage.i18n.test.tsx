@@ -65,7 +65,7 @@ describe("Settings page strings (i18n)", () => {
       // No client behind this render: the Models card sits in its loading
       // state while the separate Providers card is already on screen.
       expect(await screen.findByText("Loading the model catalog…")).toBeInTheDocument();
-      expect(screen.getByRole("heading", { level: 2, name: "OpenCode providers" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { level: 2, name: "Model providers" })).toBeInTheDocument();
       // The Providers card shows its content outright — adding a provider is
       // the common task here and used to sit behind a "Manage" click.
       expect(screen.queryByRole("button", { name: "Manage" })).not.toBeInTheDocument();

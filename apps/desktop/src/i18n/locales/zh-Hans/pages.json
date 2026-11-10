@@ -69,7 +69,7 @@
   },
   "skills": {
     "title": "技能与代理",
-    "subtitle": "代理可以调用的全部能力，从 OpenCode 实时加载。",
+    "subtitle": "智能体可以调用的全部能力，从运行时实时加载。",
     "install": {
       "sectionTitle": "安装技能",
       "placeholder": "粘贴 SKILL.md，或粘贴一个 URL / 描述，交给代理生成",
@@ -88,7 +88,7 @@
       "found": "已找到",
       "notFound": "未找到",
       "appManaged": "应用内置",
-      "note": "OpenCode 使用此处已安装的组件运行代码（例如通过其 shell 工具调用 Python）。uv 随应用内置，Jupyter 可在「设置 → 连接器」中由应用托管。Python 和 R 并未内置——请自行安装它们或安装 Science Pack 以启用分析功能。"
+      "note": "智能体运行时使用此处已安装的组件运行代码（例如通过其 shell 工具调用 Python）。uv 随应用内置，Jupyter 可在「设置 → 连接器」中由应用托管。Python 和 R 并未内置——请自行安装它们或安装 Science Pack 以启用分析功能。"
     },
     "agentsSection": {
       "heading": "代理",

@@ -97,7 +97,7 @@ pub const SESSIONS_DIR_NAME: &str = "sessions";
 /// Keep the user-visible workspace root predictable:
 ///
 /// ```text
-/// OpenScience/
+/// ScienceCowork/
 ///   projects/
 ///   sessions/
 ///   .openscience/
@@ -158,7 +158,7 @@ pub fn workspace_dir(env: &Env) -> Result<PathBuf, String> {
 }
 
 /// The workspace root containing the `projects/` and `sessions/` collections.
-/// A folder the user picked in Settings wins; the default is `~/Documents/OpenScience`
+/// A folder the user picked in Settings wins; the default is `~/Documents/ScienceCowork`
 /// (no space — the agent runs shell commands against this path, and unquoted
 /// spaces break them), falling back to `$HOME/Documents`.
 ///
@@ -174,16 +174,27 @@ pub fn workspace_dir(env: &Env) -> Result<PathBuf, String> {
 /// that is present but momentarily unwritable — a read-only volume, a cloud
 /// drive mid-sync — must still resolve rather than turn a read into an error.
 pub fn base_workspace_dir(env: &Env) -> Result<PathBuf, String> {
-    if let Ok(f) = base_workspace_file(env) {
-        if let Ok(s) = std::fs::read_to_string(&f) {
-            let dir = PathBuf::from(persisted_path(s.trim()));
-            if dir.is_dir() {
-                let _ = ensure_base_layout(dir.clone());
-                return Ok(dir);
+    let saved = std::fs::read_to_string(base_workspace_file(env)?)
+        .ok()
+        .map(|s| PathBuf::from(persisted_path(s.trim())));
+    let legacy = saved
+        .as_ref()
+        .filter(|p| p.ends_with(Path::new("Documents").join("OpenScience")));
+    if let Some(dir) = saved.as_ref().filter(|p| p.is_dir() && legacy.is_none()) {
+        let _ = ensure_base_layout(dir.clone());
+        #[cfg(unix)]
+        if dir.ends_with(Path::new("Documents").join("ScienceCowork")) {
+            let alias = dir.parent().unwrap().join("OpenScience");
+            if !alias.exists() {
+                let _ = std::os::unix::fs::symlink(dir, alias);
             }
         }
+        return Ok(dir.clone());
     }
-    let docs = match env.document_dir() {
+    let docs = match legacy
+        .and_then(|p| p.parent().map(Path::to_path_buf))
+        .or_else(|| env.document_dir())
+    {
         Some(d) => d,
         None => {
             let home = std::env::var("HOME")
@@ -192,21 +203,51 @@ pub fn base_workspace_dir(env: &Env) -> Result<PathBuf, String> {
             PathBuf::from(home).join("Documents")
         }
     };
-    let dir = docs.join("OpenScience");
+    let dir = docs.join("ScienceCowork");
+    let legacy_is_real_dir = legacy.is_some_and(|p| {
+        p.is_dir()
+            && !p.symlink_metadata().map(|m| m.file_type().is_symlink()).unwrap_or(false)
+    });
+    if let Some(old) = legacy.filter(|_| legacy_is_real_dir && dir.exists()) {
+        // Never replace or merge an existing destination over the selected base.
+        let _ = ensure_base_layout(old.clone());
+        return Ok(old.clone());
+    }
+    let mut migrated_from = legacy.cloned();
 
     // One-time migrations, oldest name last. A failed rename (e.g. cross-volume)
     // keeps the existing location rather than splitting the user's files.
     if !dir.exists() {
-        for old in [docs.join("Open Science"), runtime_root(env)?.join("workspace")] {
+        for old in [
+            docs.join("OpenScience"),
+            docs.join("Open Science"),
+            runtime_root(env)?.join("workspace"),
+        ] {
             if old.is_dir() {
                 if std::fs::rename(&old, &dir).is_ok() {
+                    migrated_from = Some(old);
                     break;
                 }
                 return ensure_base_layout(old);
             }
         }
     }
-    ensure_base_layout(dir)
+    let dir = ensure_base_layout(dir)?;
+    #[cfg(unix)]
+    if !docs.join("OpenScience").exists() {
+        // Persisted session directories and git alternates must still resolve.
+        let _ = std::os::unix::fs::symlink(&dir, docs.join("OpenScience"));
+    }
+    if let Some(old) = migrated_from {
+        let active = active_workspace_file(env)?;
+        if let Ok(s) = std::fs::read_to_string(&active) {
+            if let Ok(relative) = Path::new(&persisted_path(s.trim())).strip_prefix(&old) {
+                write_atomic(&active, &dir.join(relative).to_string_lossy())?;
+            }
+        }
+        write_atomic(&base_workspace_file(env)?, &dir.to_string_lossy())?;
+    }
+    Ok(dir)
 }
 
 /// Path OpenCode reads when XDG_CONFIG_HOME points at our private dir.
@@ -446,10 +487,10 @@ fn credential_body(provider: &str, entry: &serde_json::Value, oauth_method: Opti
 /// scans regardless of project detection: `skills/` is the external ai4s-skills
 /// pack, `skills-office/` Anthropic's document skills (docx/pdf/pptx/xlsx),
 /// `skills-agent-browser/` the version-matched official agent-browser skill,
-/// `skills-core/` the first-party skills from `runtime/skills/core`. The
+/// `skills-core/` the first-party skills and `skills-crux/` Crux discovery workflows. The
 /// workspace's own `.opencode/skills/` stays reserved for skills the user
 /// installs. Runs before every sidecar start so app upgrades refresh the packs.
-fn deploy_bundled_skills(env: &Env) {
+pub(crate) fn deploy_bundled_skills(env: &Env) {
     let dst = match xdg_config_home(env) {
         Ok(cfg) => cfg.join("opencode").join("skills"),
         Err(_) => return,
@@ -461,6 +502,7 @@ fn deploy_bundled_skills(env: &Env) {
         "skills-office",
         "skills-agent-browser",
         "skills-core",
+        "skills-crux",
     ] {
         let Some(src) = env.resource(resource).filter(|p| p.is_dir()) else {
             all_ok = false; // dev run without `fetch-skills.sh` — nothing to deploy
@@ -540,30 +582,32 @@ fn remove_legacy_profile_files(env: &Env) {
 /// plugin's `computer.ts` reaches it as `../computer/index`, the same relative
 /// place it has in the repository (`runtime/computer`).
 fn deploy_computer_runtime(env: &Env) {
-    let Some(src) = env.resource("computer").filter(|p| p.is_dir()) else {
-        return; // a build without the bundled resources
-    };
     let Ok(config_home) = xdg_config_home(env) else {
         return;
     };
-    let dst = config_home.join("opencode").join("computer");
-    if let Err(e) = std::fs::create_dir_all(&dst) {
-        eprintln!("failed to create computer runtime directory: {e}");
-        return;
-    }
-    let Ok(entries) = std::fs::read_dir(&src) else {
-        return;
-    };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if !path.is_file() {
+    for dir_name in ["computer", "worktree"] {
+        let Some(src) = env.resource(dir_name).filter(|p| p.is_dir()) else {
+            continue; // a build without the bundled resources
+        };
+        let dst = config_home.join("opencode").join(dir_name);
+        if let Err(e) = std::fs::create_dir_all(&dst) {
+            eprintln!("failed to create {dir_name} runtime directory: {e}");
             continue;
         }
-        let Some(name) = path.file_name() else {
+        let Ok(entries) = std::fs::read_dir(&src) else {
             continue;
         };
-        if let Err(e) = std::fs::copy(&path, dst.join(name)) {
-            eprintln!("failed to deploy computer runtime {}: {e}", path.display());
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if !path.is_file() {
+                continue;
+            }
+            let Some(name) = path.file_name() else {
+                continue;
+            };
+            if let Err(e) = std::fs::copy(&path, dst.join(name)) {
+                eprintln!("failed to deploy {dir_name} runtime {}: {e}", path.display());
+            }
         }
     }
 }
@@ -579,8 +623,8 @@ pub fn computer_use_provider_dir(env: &Env) -> Option<PathBuf> {
     env.resource("computer-use").filter(|p| p.is_dir())
 }
 
-/// App-owned prompt files deployed into the OpenCode profile: the `reviewer`
-/// agent and the commands that invoke it (#72). `(resource dir, profile dir)`.
+/// App-owned reviewer/Crux agents and commands deployed into the OpenCode
+/// profile (#72). `(resource dir, profile dir)`.
 const PROFILE_PROMPTS: &[(&str, &str)] =
     &[("profile/agent", "agent"), ("profile/command", "command")];
 
@@ -588,8 +632,8 @@ const PROFILE_PROMPTS: &[(&str, &str)] =
 /// (`<xdg-config>/opencode/{agent,command}/`), which OpenCode scans for
 /// `**/*.md` in every workspace. Refreshed on every sidecar start so app
 /// upgrades replace them in place; files the user added themselves are left
-/// alone, since only our own names are written.
-fn deploy_profile_prompts(env: &Env) {
+/// alone, except retired `coral-*.md` names no longer in the bundle.
+pub(crate) fn deploy_profile_prompts(env: &Env) {
     let Ok(config_home) = xdg_config_home(env) else {
         return;
     };
@@ -610,9 +654,29 @@ fn deploy_profile_prompts(env: &Env) {
             if !path.is_file() || path.extension() != Some(std::ffi::OsStr::new("md")) {
                 continue;
             }
-            let Some(name) = path.file_name() else { continue };
+            let Some(name) = path.file_name() else {
+                continue;
+            };
             if let Err(e) = std::fs::copy(&path, dst.join(name)) {
                 eprintln!("failed to deploy profile {dir} {}: {e}", path.display());
+            }
+        }
+        if let Ok(entries) = std::fs::read_dir(&dst) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                let name = entry.file_name();
+                if path.is_file()
+                    && name.to_string_lossy().starts_with("coral-")
+                    && path.extension() == Some(std::ffi::OsStr::new("md"))
+                    && !src.join(&name).exists()
+                {
+                    if let Err(e) = std::fs::remove_file(&path) {
+                        eprintln!(
+                            "failed to remove legacy profile {dir} {}: {e}",
+                            path.display()
+                        );
+                    }
+                }
             }
         }
     }
@@ -815,7 +879,7 @@ pub fn adopt_workspace_skills(
 /// (macOS Homebrew vs. Linux /opt/conda & Linuxbrew), same as python_candidates.
 #[cfg(unix)]
 pub fn enriched_path() -> String {
-    // The user's own shell comes first: node from nvm, cargo, pnpm and the
+    // Bundled sidecars come first, then the user's shell: node from nvm, cargo, pnpm and the
     // rest live wherever their shell profile put them, which no fixed list can
     // know. The well-known locations below still cover a shell that would not
     // answer.
@@ -825,9 +889,14 @@ pub fn enriched_path() -> String {
         None => process,
     };
     let home = std::env::var("HOME").unwrap_or_default();
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|dir| dir.to_string_lossy().to_string()))
+        .unwrap_or_default();
 
     #[cfg(target_os = "macos")]
     let extras = [
+        exe_dir.clone(),
         "/opt/homebrew/bin".to_string(),
         "/usr/local/bin".to_string(),
         format!("{home}/anaconda3/bin"),
@@ -839,6 +908,7 @@ pub fn enriched_path() -> String {
     ];
     #[cfg(target_os = "linux")]
     let extras = [
+        exe_dir.clone(),
         format!("{home}/anaconda3/bin"),
         format!("{home}/miniconda3/bin"),
         "/opt/conda/bin".to_string(),
@@ -851,6 +921,7 @@ pub fn enriched_path() -> String {
     ];
     #[cfg(all(unix, not(target_os = "macos"), not(target_os = "linux")))]
     let extras = [
+        exe_dir.clone(),
         format!("{home}/.pyenv/shims"),
         "/usr/local/bin".to_string(),
         format!("{home}/.local/bin"),
@@ -858,7 +929,7 @@ pub fn enriched_path() -> String {
 
     let mut parts: Vec<String> = extras
         .into_iter()
-        .filter(|p| !base.split(':').any(|b| b == p) && std::path::Path::new(p).is_dir())
+        .filter(|p| (p == &exe_dir || !base.split(':').any(|b| b == p)) && Path::new(p).is_dir())
         .collect();
     if !base.is_empty() {
         parts.push(base);
@@ -931,6 +1002,10 @@ fn parse_marked_path(out: &str) -> Option<String> {
 #[cfg(windows)]
 pub fn enriched_path() -> String {
     let base = std::env::var("PATH").unwrap_or_default();
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|dir| dir.to_string_lossy().to_string()))
+        .unwrap_or_default();
     let mut roots: Vec<String> = Vec::new();
     if let Ok(profile) = std::env::var("USERPROFILE") {
         roots.push(format!("{profile}\\anaconda3"));
@@ -938,7 +1013,7 @@ pub fn enriched_path() -> String {
     }
     roots.push("C:\\ProgramData\\anaconda3".into());
     roots.push("C:\\ProgramData\\miniconda3".into());
-    let mut extras: Vec<String> = Vec::new();
+    let mut extras: Vec<String> = vec![exe_dir.clone()];
     for root in roots {
         for dir in [root.clone(), format!("{root}\\Scripts"), format!("{root}\\Library\\bin")] {
             extras.push(dir);
@@ -947,7 +1022,8 @@ pub fn enriched_path() -> String {
     let mut parts: Vec<String> = extras
         .into_iter()
         .filter(|p| {
-            !base.split(';').any(|b| b.eq_ignore_ascii_case(p)) && Path::new(p).is_dir()
+            (p == &exe_dir || !base.split(';').any(|b| b.eq_ignore_ascii_case(p)))
+                && Path::new(p).is_dir()
         })
         .collect();
     if !base.is_empty() {
@@ -1400,9 +1476,9 @@ fn spawn_sidecar(env: &Env, port: u16, generation: u64) -> Result<Child, String>
         Err(e) => {
             crate::debug_log::append(env, &format!("OpenCode 1 history backup failed: {e}"));
             return Err(format!(
-                "Open Science could not back up your conversation history before upgrading it, \
+                "Crux could not back up your conversation history before upgrading it, \
                  so it left everything as it was and did not start: {e}. \
-                 Free some disk space, then restart Open Science."
+                 Free some disk space, then restart Crux."
             ));
         }
     }
@@ -1530,6 +1606,14 @@ fn spawn_sidecar(env: &Env, port: u16, generation: u64) -> Result<Child, String>
     let home = std::env::var("HOME").unwrap_or_default();
     let port_str = port.to_string();
 
+    crate::crux_bridge::sync(env);
+    let path = enriched_path();
+    let path = std::env::join_paths(
+        std::iter::once(crate::crux_bridge::bin_dir(env)?).chain(std::env::split_paths(&path)),
+    )
+    .map_err(|e| e.to_string())?;
+    let engine_cfg = crate::crux_bridge::engine_agents_config_path(env)?;
+    let coral_cfg = crate::crux_bridge::coral_agents_config_path(env)?;
     let bin = sidecar_bin("opencode")
         .ok_or_else(|| "bundled OpenCode binary not found next to the executable".to_string())?;
 
@@ -1546,13 +1630,19 @@ fn spawn_sidecar(env: &Env, port: u16, generation: u64) -> Result<Child, String>
         .env("XDG_DATA_HOME", data.to_string_lossy().to_string())
         .env("XDG_CACHE_HOME", cache.to_string_lossy().to_string())
         .env("XDG_STATE_HOME", state_dir.to_string_lossy().to_string())
+        // Pin Crux's own state dir so `crux remote` / `crux session` invoked
+        // inside OpenCode's shell tools still find `remote_hosts.json` in
+        // `env.data_dir()` instead of resolving the overridden `XDG_DATA_HOME`.
+        .env("CRUX_STATE_DIR", env.data_dir().to_string_lossy().to_string())
         .env("HOME", home)
         // Lets bundled skill helpers (e.g. remote-compute's record_run.py) stamp
         // the recording app version into provenance — they run outside the app
         // and can't otherwise know it.
         .env("OPENSCIENCE_APP_VERSION", env.version())
         // GUI-launched apps get a minimal PATH; give the agent the user's real tools.
-        .env("PATH", enriched_path())
+        .env("PATH", path)
+        .env("CRUX_AGENTS_CONFIG", engine_cfg)
+        .env("CORAL_AGENTS_CONFIG", coral_cfg)
         .current_dir(workspace)
         // OpenCode keeps its own log file (xdg-data/opencode/log/opencode.log),
         // so its stdout carries nothing worth a pipe — and an undrained pipe
@@ -1564,7 +1654,9 @@ fn spawn_sidecar(env: &Env, port: u16, generation: u64) -> Result<Child, String>
     // no further password or one-time code (#73). The bundled remote-compute
     // skill and the ssh_connect tool both pass `-F "$OPENSCIENCE_SSH_CONFIG"`.
     if let Some(ssh_config) = ssh_config_path(env) {
-        cmd.env("OPENSCIENCE_SSH_CONFIG", ssh_config.to_string_lossy().to_string());
+        let ssh_cfg = ssh_config.to_string_lossy().to_string();
+        cmd.env("CRUX_SSH_CONFIG", &ssh_cfg);
+        cmd.env("OPENSCIENCE_SSH_CONFIG", ssh_cfg);
     }
     // The model catalog the app keeps current itself (`model_catalog`): OpenCode
     // serves the file named here instead of the copy it could not download.
@@ -1893,7 +1985,7 @@ pub fn workspace_path(env: &Env) -> Result<String, String> {
     Ok(workspace_dir(env)?.to_string_lossy().to_string())
 }
 
-/// The base folder containing projects and sessions (`~/Documents/OpenScience`).
+/// The base folder containing projects and sessions (`~/Documents/ScienceCowork`).
 pub fn workspace_base(env: &Env) -> Result<String, String> {
     Ok(base_workspace_dir(env)?.to_string_lossy().to_string())
 }
@@ -2584,6 +2676,129 @@ mod tests {
     }
 
     #[test]
+    fn workspace_base_migrates_legacy_defaults_and_persisted_paths() {
+        for (legacy, persisted, moved, collision) in [
+            (None, false, false, false),
+            (Some("OpenScience"), false, false, false),
+            (Some("OpenScience"), true, false, false),
+            (Some("OpenScience"), true, true, false),
+            (Some("OpenScience"), true, false, true),
+            (Some("Open Science"), false, false, false),
+            (Some("custom"), true, false, false),
+        ] {
+            let (_, root) = temp_env("workspace-migration");
+            let docs = root.join("Documents");
+            let env = crate::env::Env::new(
+                root.clone(),
+                root.join("res"),
+                Some(docs.clone()),
+                "0.0.0".into(),
+            );
+            let target = docs.join("ScienceCowork");
+            let old = docs.join(legacy.unwrap_or("unused"));
+            let runtime = root.join("runtime");
+            fs::create_dir_all(&runtime).unwrap();
+            if legacy.is_some() {
+                fs::create_dir_all(old.join("sessions/run")).unwrap();
+                fs::write(old.join("sessions/run/data.txt"), "keep me").unwrap();
+                fs::write(
+                    runtime.join("active-workspace.txt"),
+                    old.join("sessions/run").to_str().unwrap(),
+                )
+                .unwrap();
+            }
+            if persisted {
+                fs::write(runtime.join("base-workspace.txt"), old.to_str().unwrap()).unwrap();
+            }
+            if moved {
+                fs::rename(&old, &target).unwrap();
+            } else if collision {
+                fs::create_dir_all(&target).unwrap();
+            }
+            let expected = if collision || legacy == Some("custom") {
+                &old
+            } else {
+                &target
+            };
+            assert_eq!(super::base_workspace_dir(&env).unwrap(), *expected);
+            assert!(expected.join("projects").is_dir());
+            assert!(expected.join("sessions").is_dir());
+            if legacy.is_some() {
+                assert_eq!(
+                    fs::read_to_string(expected.join("sessions/run/data.txt")).unwrap(),
+                    "keep me"
+                );
+                assert_eq!(
+                    super::workspace_dir(&env).unwrap(),
+                    expected.join("sessions/run")
+                );
+            }
+            if persisted {
+                assert_eq!(
+                    fs::read_to_string(runtime.join("base-workspace.txt")).unwrap(),
+                    expected.to_str().unwrap()
+                );
+            }
+            assert_eq!(super::base_workspace_dir(&env).unwrap(), *expected);
+            #[cfg(unix)]
+            if expected == &target {
+                let alias = docs.join("OpenScience");
+                assert_eq!(fs::read_link(&alias).unwrap(), target);
+                fs::write(runtime.join("base-workspace.txt"), alias.to_str().unwrap()).unwrap();
+                assert_eq!(super::base_workspace_dir(&env).unwrap(), target);
+                fs::remove_file(&alias).unwrap();
+                assert_eq!(super::base_workspace_dir(&env).unwrap(), target);
+                assert_eq!(fs::read_link(&alias).unwrap(), target);
+            }
+            fs::remove_dir_all(root).unwrap();
+        }
+    }
+
+    #[test]
+    fn profile_deployment_prunes_only_unbundled_legacy_markdown() {
+        let (env, root) = temp_env("profile-migration");
+        for kind in ["agent", "command"] {
+            let src = root.join("res/profile").join(kind);
+            let dst = root.join("runtime/xdg-config/opencode").join(kind);
+            fs::create_dir_all(&src).unwrap();
+            fs::create_dir_all(&dst).unwrap();
+            for name in [
+                "crux-run-doctor.md",
+                "crux-task-author.md",
+                "coral-bundled.md",
+            ] {
+                fs::write(src.join(name), "bundled").unwrap();
+            }
+            for name in [
+                "coral-run-doctor.md",
+                "coral-task-author.md",
+                "reviewer.md",
+                "custom.md",
+                "coral-notes.txt",
+            ] {
+                fs::write(dst.join(name), "existing").unwrap();
+            }
+            fs::create_dir_all(dst.join("coral-folder.md")).unwrap();
+            super::deploy_profile_prompts(&env);
+            for name in ["coral-run-doctor.md", "coral-task-author.md"] {
+                assert!(!dst.join(name).exists());
+            }
+            for name in [
+                "crux-run-doctor.md",
+                "crux-task-author.md",
+                "coral-bundled.md",
+            ] {
+                assert_eq!(fs::read_to_string(dst.join(name)).unwrap(), "bundled");
+            }
+            for name in ["reviewer.md", "custom.md", "coral-notes.txt"] {
+                assert_eq!(fs::read_to_string(dst.join(name)).unwrap(), "existing");
+            }
+            assert!(dst.join("coral-folder.md").is_dir());
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     fn base_layout_has_separate_project_and_session_collections() {
         let root =
             std::env::temp_dir().join(format!("os-workspace-layout-{}", std::process::id()));
@@ -2634,7 +2849,7 @@ mod tests {
         }
         fs::create_dir_all(dir.join("runtime")).unwrap();
         // The base is pointed somewhere temporary first: without that record this
-        // would fall through to the real `~/Documents/OpenScience`.
+        // would fall through to the real `~/Documents/ScienceCowork`.
         set_workspace_base(&env, base.to_string_lossy().to_string()).unwrap();
         fs::write(
             dir.join("runtime/active-workspace.txt"),
@@ -2952,6 +3167,7 @@ pub fn remove_config_entry(
     let out = remove_key_from_config(&text, &section, &key)?;
     write_atomic(&path, &out)?;
     tighten_private(&path);
+    crate::crux_bridge::sync(env);
     // No restart: OpenCode 2 watches its config and applies the edit itself.
     Ok(())
 }
@@ -2995,6 +3211,7 @@ pub fn set_default_model(env: &Env, model: String) -> Result<(), String> {
     })?;
     write_atomic(&path, &updated)?;
     tighten_private(&path);
+    crate::crux_bridge::sync(env);
     // No restart: OpenCode 2 applies the edit within a second, and a restart
     // would cut every running turn short.
     Ok(())
@@ -3019,6 +3236,7 @@ pub fn patch_opencode_config(env: &Env, patch: serde_json::Value) -> Result<(), 
     let updated = crate::opencode_config::patch_config(&existing, &patch)?;
     write_atomic(&path, &updated)?;
     tighten_private(&path);
+    crate::crux_bridge::sync(env);
     Ok(())
 }
 
@@ -3147,6 +3365,7 @@ pub fn set_memory_enabled(
     };
     write_atomic(&path, &updated)?;
     tighten_private(&path);
+    crate::crux_bridge::sync(env);
     // No restart: OpenCode 2 applies the edit within a second, and a restart
     // would cut every running turn short.
     Ok(())
@@ -3185,6 +3404,7 @@ fn write_agent_config(env: &Env, rewrite: impl FnOnce(&str) -> String) -> Result
     }
     write_atomic(&path, &updated)?;
     tighten_private(&path);
+    crate::crux_bridge::sync(env);
     // No restart: OpenCode 2 applies the edit within a second, and a restart
     // would cut every running turn short.
     Ok(())
@@ -3321,6 +3541,7 @@ pub fn configure_opencode(
     }
     write_atomic(&path, &merged)?;
     tighten_private(&path);
+    crate::crux_bridge::sync(env);
 
     // Restart so the running server reloads the new provider config.
     Ok(restart_sidecar_if_running(env)?

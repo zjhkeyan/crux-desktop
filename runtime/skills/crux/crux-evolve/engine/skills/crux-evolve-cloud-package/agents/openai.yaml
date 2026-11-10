@@ -1,0 +1,4 @@
+interface:
+  display_name: "Crux Evolve Cloud Package"
+  short_description: "Build and validate project ZIPs for Crux Evolve cloud"
+  default_prompt: "Use $crux-evolve-cloud-package to build and locally verify an algorithm task ZIP for import into Crux Evolve."

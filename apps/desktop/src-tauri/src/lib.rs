@@ -12,6 +12,7 @@ mod compute;
 mod jupyter;
 mod kernel;
 mod large_file;
+mod link;
 mod modal;
 mod model_probe;
 mod preview_server;
@@ -55,6 +56,66 @@ pub struct EnvState(pub Env);
 /// managed it, which no command can be.
 pub(crate) fn env_of(app: &AppHandle) -> Env {
     app.state::<EnvState>().0.clone()
+}
+
+#[tauri::command]
+fn discovery_board(app: AppHandle, run_dir: Option<String>, coral_dir: Option<String>) -> Result<serde_json::Value, String> {
+    let raw = run_dir.or(coral_dir).ok_or_else(|| "run_dir is required".to_string())?;
+    let dir = osd_core::crux_views::scoped_run_dir(&env_of(&app), &raw)?;
+    osd_core::crux_views::read_board_view(&dir)
+}
+
+#[tauri::command]
+fn discovery_tree(app: AppHandle, run_dir: Option<String>, coral_dir: Option<String>, commit: Option<String>) -> Result<serde_json::Value, String> {
+    let raw = run_dir.or(coral_dir).ok_or_else(|| "run_dir is required".to_string())?;
+    let dir = osd_core::crux_views::scoped_run_dir(&env_of(&app), &raw)?;
+    osd_core::crux_views::read_tree_view(&dir, commit.as_deref())
+}
+
+#[tauri::command]
+fn discovery_archive(app: AppHandle, run_dir: Option<String>, coral_dir: Option<String>) -> Result<serde_json::Value, String> {
+    let raw = run_dir.or(coral_dir).ok_or_else(|| "run_dir is required".to_string())?;
+    let dir = osd_core::crux_views::scoped_run_dir(&env_of(&app), &raw)?;
+    osd_core::crux_views::read_archive_view(&dir)
+}
+
+#[tauri::command]
+fn discovery_radio(app: AppHandle, run_dir: Option<String>, coral_dir: Option<String>) -> Result<serde_json::Value, String> {
+    let raw = run_dir.or(coral_dir).ok_or_else(|| "run_dir is required".to_string())?;
+    let dir = osd_core::crux_views::scoped_run_dir(&env_of(&app), &raw)?;
+    osd_core::crux_views::read_radio_view(&dir)
+}
+
+#[tauri::command]
+fn discovery_head(app: AppHandle, run_dir: Option<String>, coral_dir: Option<String>) -> Result<serde_json::Value, String> {
+    let raw = run_dir.or(coral_dir).ok_or_else(|| "run_dir is required".to_string())?;
+    let dir = osd_core::crux_views::scoped_run_dir(&env_of(&app), &raw)?;
+    osd_core::crux_views::read_ledger_head(&dir)
+}
+
+#[tauri::command]
+fn get_coral_board(app: AppHandle, coral_dir: String) -> Result<serde_json::Value, String> {
+    discovery_board(app, Some(coral_dir), None)
+}
+
+#[tauri::command]
+fn get_coral_tree(app: AppHandle, coral_dir: String, commit: Option<String>) -> Result<serde_json::Value, String> {
+    discovery_tree(app, Some(coral_dir), None, commit)
+}
+
+#[tauri::command]
+fn get_coral_archive(app: AppHandle, coral_dir: String) -> Result<serde_json::Value, String> {
+    discovery_archive(app, Some(coral_dir), None)
+}
+
+#[tauri::command]
+fn get_coral_radio(app: AppHandle, coral_dir: String) -> Result<serde_json::Value, String> {
+    discovery_radio(app, Some(coral_dir), None)
+}
+
+#[tauri::command]
+fn get_coral_head(app: AppHandle, coral_dir: String) -> Result<serde_json::Value, String> {
+    discovery_head(app, Some(coral_dir), None)
 }
 
 /// Build the `Env` from Tauri's own path resolution, so the desktop and `osd`
@@ -139,6 +200,7 @@ pub fn run() {
         .manage(ProvenanceState::default())
         .manage(RunState::default())
         .manage(ssh_session::SshState::default())
+        .manage(link::LinkState::default())
         .manage(status_bar::AwakeState::default())
         .manage(terminal::TerminalState::default())
         .manage(acp::AcpState::default())
@@ -178,6 +240,15 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            link::crux_link_list_hosts,
+            link::crux_link_save_host,
+            link::crux_link_delete_host,
+            link::crux_link_preflight,
+            link::crux_link_pair_key,
+            link::crux_link_unpair_key,
+            link::crux_link_harvest,
+            discovery_board, discovery_tree, discovery_archive, discovery_radio, discovery_head,
+            get_coral_board, get_coral_tree, get_coral_archive, get_coral_radio, get_coral_head,
             session_sync::sync_export_session,
             session_sync::sync_import_session,
             session_sync::sync_list_mirror,
@@ -355,6 +426,7 @@ pub fn run() {
                 gateway::shutdown(app, app.state::<osd_core::gateway::GatewayState>().inner());
                 // An authenticated ssh channel must not outlive the app that
                 // opened it (#73) — the master lives past our exit otherwise.
+                link::shutdown(app);
                 ssh_session::shutdown(app);
                 // An ACP agent child must not outlive the window that started it.
                 acp::shutdown(app);

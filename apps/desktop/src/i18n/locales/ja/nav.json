@@ -26,7 +26,7 @@
     "menuScratch": "ゼロから始める",
     "menuExisting": "既存のフォルダを使う",
     "importTitle": "既存のフォルダを取り込む",
-    "importSubtitle": "Open Science Desktop で「{{name}}」を使う方法を選択してください。",
+    "importSubtitle": "Crux Desktop で「{{name}}」を使う方法を選択してください。",
     "importCopy": "ワークスペースにコピー",
     "importCopyHint": "管理されたコピーを作成して元のファイルは変更しませんが、追加のディスク容量を使います。",
     "importInPlace": "そのまま使用",
