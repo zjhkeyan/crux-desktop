@@ -11,6 +11,7 @@ Built with Tauri 2, React, Rust (`crux`), OpenCode, and bundled research engines
 <p>
   <b>English</b> ·
   <a href="./README.zh.md">简体中文</a> ·
+  <a href="./docs/PROJECT_DOCUMENTATION.zh.md"><b>📘 Project Documentation (ZH)</b></a> ·
   <a href="./README.ja.md">日本語</a> ·
   <a href="./README.es.md">Español</a> ·
   <a href="./README.de.md">Deutsch</a> ·

@@ -11,6 +11,7 @@
 <p>
   <a href="./README.md">English</a> ·
   <b>简体中文</b> ·
+  <a href="./docs/PROJECT_DOCUMENTATION.zh.md"><b>📘 完整项目技术与使用文档</b></a> ·
   <a href="./README.ja.md">日本語</a> ·
   <a href="./README.es.md">Español</a> ·
   <a href="./README.de.md">Deutsch</a> ·
