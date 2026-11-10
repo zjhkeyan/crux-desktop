@@ -9,12 +9,6 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
-    inputs:
-      windows_only:
-        description: "Only build Windows x64 (.exe / .msi / portable zip)"
-        required: false
-        default: "true"
-        type: string
 
 # tauri-action needs to create the draft release and upload assets.
 permissions:
@@ -29,27 +23,13 @@ concurrency:
 
 jobs:
   build:
-    if: ${{ (github.event_name != 'workflow_dispatch' || github.event.inputs.windows_only != 'true' || matrix.platform == 'windows-latest') && matrix.platform != 'ubuntu-22.04-arm' }}
     timeout-minutes: 210
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
-            target: aarch64-apple-darwin
-          - platform: macos-latest
-            target: x86_64-apple-darwin
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
-          # Linux builds on 22.04 on purpose: the installer's glibc floor is
-          # the runner's, and 22.04 (glibc 2.35) is the oldest LTS with
-          # webkit2gtk-4.1. arm64 is built natively, not cross-compiled —
-          # WebKitGTK's system libraries don't cross-link cleanly — and is what
-          # NVIDIA DGX Spark / DGX OS (Ubuntu 24.04, aarch64) installs.
-          - platform: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
-          - platform: ubuntu-22.04-arm
-            target: aarch64-unknown-linux-gnu
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -204,7 +184,7 @@ jobs:
           # Empty tagName (workflow_dispatch) skips release creation.
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
           releaseName: ${{ github.ref_type == 'tag' && format('Crux Desktop {0}', github.ref_name) || '' }}
-          releaseDraft: true
+          releaseDraft: false
           # Standing install/first-launch notes. Tagged macOS releases are blocked
           # above unless Developer ID signing + notarization credentials are
           # present; Windows remains unsigned for now.
@@ -367,20 +347,3 @@ jobs:
             target/${{ matrix.target }}/release/bundle/**/*.deb
             target/${{ matrix.target }}/release/bundle/**/*.rpm
           if-no-files-found: warn
-
-  # A tag build only queues its macOS app on the draft release; Apple takes
-  # minutes to hours. Start the finalize chain now instead of waiting on a timer.
-  notarize:
-    needs: build
-    if: always() && github.ref_type == 'tag'
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - name: Start macOS notarization finalize
-        shell: bash
-        run: |
-          gh workflow run finalize-macos-notarization.yml -R "$GITHUB_REPOSITORY" \
-            --ref "${{ github.event.repository.default_branch }}"
